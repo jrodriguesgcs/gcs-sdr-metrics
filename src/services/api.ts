@@ -53,7 +53,18 @@ class RateLimiter {
 const rateLimiter = new RateLimiter();
 
 async function fetchFromProxy(endpoint: string): Promise<any> {
-  const response = await fetch(`${API_BASE}?endpoint=${encodeURIComponent(endpoint)}`);
+  const isDev = import.meta.env.DEV;
+  
+  let url: string;
+  if (isDev) {
+    // Local development: direct call (won't work, needs Vercel)
+    url = `${API_BASE}?endpoint=${encodeURIComponent(endpoint)}`;
+  } else {
+    // Production: use Vercel serverless function
+    url = `${API_BASE}?endpoint=${encodeURIComponent(endpoint)}`;
+  }
+  
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`API Error: ${response.statusText}`);
   }
@@ -102,17 +113,25 @@ export async function fetchDeals(
   const limit = 100;
   let hasMore = true;
 
+  // Calculate date 7 days ago for filtering (covers today + yesterday + buffer)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const dateFilter = sevenDaysAgo.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
   onProgress({
     phase: 'deals',
-    message: 'Fetching deals...',
+    message: 'Fetching recent deals (last 7 days)...',
     current: 0,
     total: 0,
     percentage: 0,
   });
 
   while (hasMore) {
+    // Fetch deals created in the last 7 days, sorted by most recent first
+    const endpoint = `/api/3/deals?limit=${limit}&offset=${offset}&orders[cdate]=DESC&filters[cdate_after]=${dateFilter}`;
+    
     const data = await rateLimiter.throttle(() =>
-      fetchFromProxy(`/api/3/deals?limit=${limit}&offset=${offset}`)
+      fetchFromProxy(endpoint)
     );
 
     if (data.deals && data.deals.length > 0) {
@@ -128,17 +147,30 @@ export async function fetchDeals(
       
       onProgress({
         phase: 'deals',
-        message: `Fetched ${deals.length} deals...`,
+        message: `Fetched ${deals.length} recent deals...`,
         current: deals.length,
         total: data.meta?.total || deals.length,
         percentage: Math.min(50, (deals.length / (data.meta?.total || deals.length)) * 100),
       });
 
       hasMore = data.deals.length === limit;
+      
+      // Safety: Stop if we've fetched more than 500 deals (shouldn't happen with 7-day filter)
+      if (deals.length >= 500) {
+        hasMore = false;
+      }
     } else {
       hasMore = false;
     }
   }
+
+  onProgress({
+    phase: 'deals',
+    message: `Loaded ${deals.length} recent deals successfully`,
+    current: deals.length,
+    total: deals.length,
+    percentage: 100,
+  });
 
   return deals;
 }
@@ -204,7 +236,7 @@ export async function fetchAllDealsWithCustomFields(
   // Phase 1: Metadata
   await fetchDealCustomFieldMeta(onProgress);
 
-  // Phase 2: Deals
+  // Phase 2: Deals (last 7 days only)
   const deals = await fetchDeals(onProgress);
 
   // Phase 3: Custom Fields
