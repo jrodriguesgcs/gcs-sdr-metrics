@@ -1,6 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+const handler = async (req: any, res: any) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,3 +44,5 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
     return res.status(500).json({ error: 'Failed to fetch from ActiveCampaign' });
   }
 };
+
+module.exports = handler;
