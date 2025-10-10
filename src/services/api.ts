@@ -95,7 +95,6 @@ export async function fetchDealCustomFieldMeta(
 }
 
 export async function fetchDeals(
-  dateFilter: string,
   onProgress: (progress: LoadingProgress) => void
 ): Promise<Deal[]> {
   const deals: Deal[] = [];
@@ -200,14 +199,13 @@ export async function fetchDealCustomFields(
 }
 
 export async function fetchAllDealsWithCustomFields(
-  dateFilter: string,
   onProgress: (progress: LoadingProgress) => void
 ): Promise<Deal[]> {
   // Phase 1: Metadata
-  const fieldMap = await fetchDealCustomFieldMeta(onProgress);
+  await fetchDealCustomFieldMeta(onProgress);
 
   // Phase 2: Deals
-  const deals = await fetchDeals(dateFilter, onProgress);
+  const deals = await fetchDeals(onProgress);
 
   // Phase 3: Custom Fields
   const dealIds = deals.map(d => d.id);
