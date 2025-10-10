@@ -44,7 +44,7 @@ function App() {
   const loadTodayData = async () => {
     setIsLoading(true);
     try {
-      const todayDeals = await fetchAllDealsWithCustomFields('today', setLoadingProgress);
+      const todayDeals = await fetchAllDealsWithCustomFields(setLoadingProgress);
       setDeals(todayDeals);
       const todayMetrics = calculateMetrics(todayDeals, 'today');
       setMetrics(todayMetrics);
@@ -62,7 +62,7 @@ function App() {
 
   const loadYesterdayDataInBackground = async () => {
     try {
-      const yesterdayData = await fetchAllDealsWithCustomFields('yesterday', () => {});
+      const yesterdayData = await fetchAllDealsWithCustomFields(() => {});
       setYesterdayDeals(yesterdayData);
       setYesterdayLoadingInBackground(false);
     } catch (error) {
