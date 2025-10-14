@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import Login from './components/Login';
+import LoadingProgress from './components/LoadingProgress';
+import RefreshNotification from './components/RefreshNotification';
 import Tab1Distribution from './components/Tab1Distribution';
 import Tab2Automation from './components/Tab2Automation';
-import { Deal, DateFilter, SDRMetrics } from './types';
+import { Deal, DateFilter, SDRMetrics, LoadingProgress as LoadingProgressType } from './types';
 import { fetchAllDealsWithCustomFields } from './services/api';
 import { calculateMetrics } from './utils/metricsUtils';
 import { formatDate, getDateRange } from './utils/dateUtils';
@@ -17,13 +19,30 @@ function App() {
   const [yesterdayDeals, setYesterdayDeals] = useState<Deal[]>([]);
   const [metrics, setMetrics] = useState<SDRMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<LoadingProgressType>({
+    phase: 'idle',
+    message: '',
+    current: 0,
+    total: 0,
+    percentage: 0,
+  });
+  const [refreshStatus, setRefreshStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [refreshMessage, setRefreshMessage] = useState('');
 
   useEffect(() => {
     if (isAuthenticated && deals.length === 0) {
       loadTodayData();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (refreshStatus === 'success' || refreshStatus === 'error') {
+      const timer = setTimeout(() => {
+        setRefreshStatus('idle');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [refreshStatus]);
 
   const handleLogin = (password: string) => {
     if (password === APP_PASSWORD) {
@@ -36,7 +55,7 @@ function App() {
   const loadTodayData = async () => {
     setIsLoading(true);
     try {
-      const { deals: todayDeals } = await fetchAllDealsWithCustomFields(() => {});
+      const { deals: todayDeals } = await fetchAllDealsWithCustomFields(setLoadingProgress);
       setDeals(todayDeals);
       const todayMetrics = calculateMetrics(todayDeals, 'today');
       setMetrics(todayMetrics);
@@ -60,9 +79,11 @@ function App() {
   };
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
+    setRefreshStatus('loading');
+    setRefreshMessage('Refreshing data...');
+    
     try {
-      const { deals: refreshedDeals } = await fetchAllDealsWithCustomFields(() => {});
+      const { deals: refreshedDeals } = await fetchAllDealsWithCustomFields(setLoadingProgress);
       if (dateFilter === 'today') {
         setDeals(refreshedDeals);
       } else {
@@ -70,11 +91,13 @@ function App() {
       }
       const newMetrics = calculateMetrics(refreshedDeals, dateFilter);
       setMetrics(newMetrics);
+      
+      setRefreshStatus('success');
+      setRefreshMessage('Refresh completed successfully!');
     } catch (error) {
       console.error('Error refreshing data:', error);
-      alert('Failed to refresh data.');
-    } finally {
-      setIsRefreshing(false);
+      setRefreshStatus('error');
+      setRefreshMessage('Refresh failed. Please try again.');
     }
   };
 
@@ -89,27 +112,20 @@ function App() {
     return <Login onLogin={handleLogin} />;
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 text-xl font-medium">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   const { start } = getDateRange(dateFilter);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Loading Spinner */}
-      {isRefreshing && (
-        <div className="fixed top-4 right-4 bg-white rounded-xl shadow-lg p-4 flex items-center space-x-3 z-50 border border-gray-200">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-          <span className="text-sm font-medium text-gray-700">Refreshing...</span>
-        </div>
+      {/* Loading Progress Modal */}
+      {isLoading && <LoadingProgress progress={loadingProgress} />}
+
+      {/* Refresh Notification */}
+      {refreshStatus !== 'idle' && (
+        <RefreshNotification 
+          status={refreshStatus} 
+          message={refreshMessage}
+          onClose={() => setRefreshStatus('idle')}
+        />
       )}
 
       {/* Header */}
@@ -123,7 +139,7 @@ function App() {
             <div className="mt-4 md:mt-0">
               <button
                 onClick={handleRefresh}
-                disabled={isRefreshing}
+                disabled={refreshStatus === 'loading'}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
               >
                 Refresh Data

@@ -36,9 +36,9 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
 
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-        <div className="bg-gray-900 px-6 py-4 border-b border-gray-800">
-          <h3 className="text-base font-semibold text-white">{metricsData.sdrAgent}</h3>
-          <p className="text-gray-300 text-sm mt-0.5">Total Deals Distributed: {totalDeals}</p>
+        <div className="bg-white px-6 py-4 border-b border-gray-200">
+          <h3 className="text-base font-semibold text-gray-900">{metricsData.sdrAgent}</h3>
+          <p className="text-gray-600 text-sm mt-0.5">Total Deals Distributed: {totalDeals}</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -55,20 +55,29 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
               {owners.map(owner => {
                 const ownerData = metricsData.dealsByOwner[owner];
                 const countries = Object.keys(ownerData.byCountry).sort();
-                const totalRowsForOwner = countries.length;
+                const totalRowsForOwner = countries.reduce((sum, country) => {
+                  const isExpanded = expanded[`${owner}-${country}`];
+                  const programs = Object.keys(ownerData.byCountry[country].byProgram);
+                  return sum + 1 + (isExpanded ? programs.length : 0);
+                }, 0);
+
+                let currentRowIndex = 0;
 
                 return (
                   <React.Fragment key={owner}>
-                    {countries.map((country, countryIdx) => {
+                    {countries.map((country) => {
                       const countryData = ownerData.byCountry[country];
                       const key = `${owner}-${country}`;
                       const isExpanded = expanded[key];
                       const programs = Object.keys(countryData.byProgram).sort();
+                      const isFirstCountry = currentRowIndex === 0;
+                      
+                      currentRowIndex += 1 + (isExpanded ? programs.length : 0);
 
                       return (
                         <React.Fragment key={key}>
                           <tr className="hover:bg-gray-50 transition-colors">
-                            {countryIdx === 0 && (
+                            {isFirstCountry && (
                               <td
                                 className="px-6 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 align-top"
                                 rowSpan={totalRowsForOwner}
@@ -97,7 +106,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                           {isExpanded &&
                             programs.map(program => (
                               <tr key={`${key}-${program}`} className="bg-blue-50 hover:bg-blue-100 transition-colors">
-                                <td className="px-6 py-2.5 text-sm text-gray-700 pl-14" colSpan={1}>
+                                <td className="px-6 py-2.5 text-sm text-gray-700 pl-14">
                                   {program}
                                 </td>
                                 <td className="px-6 py-2.5 text-right text-sm font-medium text-gray-900">
@@ -154,8 +163,8 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
           const total = getTotalDeals(data);
           return (
             <div key={name} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-              <div className="bg-gray-900 px-6 py-3 border-b border-gray-800">
-                <h4 className="text-base font-semibold text-white">{name}</h4>
+              <div className="bg-white px-6 py-3 border-b border-gray-200">
+                <h4 className="text-base font-semibold text-gray-900">{name}</h4>
               </div>
               <div className="p-6 space-y-3">
                 <div className="flex justify-between items-center">

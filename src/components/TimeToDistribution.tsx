@@ -11,9 +11,9 @@ export default function TimeToDistribution({ metrics }: TimeToDistributionProps)
   if (intervals.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-        <div className="bg-gray-900 px-6 py-4 border-b border-gray-800">
-          <h3 className="text-base font-semibold text-white">{metrics.sdrAgent}</h3>
-          <p className="text-gray-300 text-sm mt-0.5">Time to Distribution</p>
+        <div className="bg-white px-6 py-4 border-b border-gray-200">
+          <h3 className="text-base font-semibold text-gray-900">{metrics.sdrAgent}</h3>
+          <p className="text-gray-600 text-sm mt-0.5">Time to Distribution</p>
         </div>
         <div className="p-6 text-center text-gray-500 text-sm">No data available</div>
       </div>
@@ -22,9 +22,9 @@ export default function TimeToDistribution({ metrics }: TimeToDistributionProps)
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-      <div className="bg-gray-900 px-6 py-4 border-b border-gray-800">
-        <h3 className="text-base font-semibold text-white">{metrics.sdrAgent}</h3>
-        <p className="text-gray-300 text-sm mt-0.5">Time to Distribution</p>
+      <div className="bg-white px-6 py-4 border-b border-gray-200">
+        <h3 className="text-base font-semibold text-gray-900">{metrics.sdrAgent}</h3>
+        <p className="text-gray-600 text-sm mt-0.5">Time to Distribution</p>
       </div>
       <div className="p-6">
         <div className="space-y-3">
