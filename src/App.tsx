@@ -39,7 +39,7 @@ function App() {
     if (refreshStatus === 'success' || refreshStatus === 'error') {
       const timer = setTimeout(() => {
         setRefreshStatus('idle');
-      }, 3000);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [refreshStatus]);
@@ -59,6 +59,10 @@ function App() {
       setDeals(todayDeals);
       const todayMetrics = calculateMetrics(todayDeals, 'today');
       setMetrics(todayMetrics);
+
+      // Show success notification
+      setRefreshStatus('success');
+      setRefreshMessage('All deals from today and yesterday have been loaded');
 
       loadYesterdayDataInBackground();
     } catch (error) {
@@ -93,7 +97,7 @@ function App() {
       setMetrics(newMetrics);
       
       setRefreshStatus('success');
-      setRefreshMessage('Refresh completed successfully!');
+      setRefreshMessage('All deals from today and yesterday have been loaded');
     } catch (error) {
       console.error('Error refreshing data:', error);
       setRefreshStatus('error');

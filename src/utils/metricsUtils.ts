@@ -135,8 +135,11 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       } else if (partner === 'Rafaela Barbosa - Italy CBD') {
         metrics.sentToPartner.rafaelaBarbosaItalyCBD++;
       }
+    }
 
-      // Automation metrics (with DISTRIBUTION Time)
+    // Automation metrics - NO FILTER on distribution time
+    // Check if the deal was created in the date range
+    if (customFields.sdrAgent && isDateInRange(deal.createdDate, start, end)) {
       const automation = customFields.sendToAutomation?.trim();
       if (automation === 'Interest not Identified') {
         metrics.automationMetrics.noInterest++;
