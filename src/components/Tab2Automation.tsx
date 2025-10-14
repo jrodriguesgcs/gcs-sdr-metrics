@@ -33,9 +33,9 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
 
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-        <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
+        <div className="bg-gray-900 px-6 py-4 border-b border-gray-800">
           <h3 className="text-base font-semibold text-white">{metricsData.sdrAgent}</h3>
-          <p className="text-slate-300 text-sm mt-0.5">Total Automation Actions: {totalAutomation}</p>
+          <p className="text-gray-300 text-sm mt-0.5">Total Automation Actions: {totalAutomation}</p>
         </div>
 
         <div className="overflow-x-auto">

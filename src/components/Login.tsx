@@ -18,14 +18,14 @@ export default function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">GCS SDR Metrics</h1>
-          <p className="text-slate-300">Please enter your password to continue</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">GCS SDR Metrics</h1>
+          <p className="text-gray-600">Please enter your password to continue</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-xl p-8 border border-gray-200">
+        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">

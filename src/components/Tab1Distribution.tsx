@@ -36,9 +36,9 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
 
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-        <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
+        <div className="bg-gray-900 px-6 py-4 border-b border-gray-800">
           <h3 className="text-base font-semibold text-white">{metricsData.sdrAgent}</h3>
-          <p className="text-slate-300 text-sm mt-0.5">Total Deals Distributed: {totalDeals}</p>
+          <p className="text-gray-300 text-sm mt-0.5">Total Deals Distributed: {totalDeals}</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -55,55 +55,64 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
               {owners.map(owner => {
                 const ownerData = metricsData.dealsByOwner[owner];
                 const countries = Object.keys(ownerData.byCountry).sort();
+                const totalRowsForOwner = countries.length;
 
-                return countries.map((country, countryIdx) => {
-                  const countryData = ownerData.byCountry[country];
-                  const key = `${owner}-${country}`;
-                  const isExpanded = expanded[key];
-                  const programs = Object.keys(countryData.byProgram).sort();
+                return (
+                  <React.Fragment key={owner}>
+                    {countries.map((country, countryIdx) => {
+                      const countryData = ownerData.byCountry[country];
+                      const key = `${owner}-${country}`;
+                      const isExpanded = expanded[key];
+                      const programs = Object.keys(countryData.byProgram).sort();
 
-                  return (
-                    <React.Fragment key={key}>
-                      <tr
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => toggleExpand(sdr, owner, country)}
-                      >
-                        {countryIdx === 0 ? (
-                          <td
-                            className="px-6 py-3 text-sm font-medium text-gray-900 border-r border-gray-200"
-                            rowSpan={countries.length}
-                          >
-                            {owner}
-                          </td>
-                        ) : null}
-                        <td className="px-6 py-3">
-                          <div className="flex items-center text-sm">
-                            <span className="mr-2 text-blue-600 text-xs">{isExpanded ? '▼' : '▶'}</span>
-                            <span className="font-medium text-gray-900">{country}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 text-right text-sm font-semibold text-gray-900">{countryData.total}</td>
-                        <td className="px-6 py-3 text-right text-sm font-medium text-blue-600">
-                          {calculatePercentage(countryData.total, totalDeals)}
-                        </td>
-                      </tr>
-                      {isExpanded &&
-                        programs.map(program => (
-                          <tr key={`${key}-${program}`} className="bg-blue-50">
-                            <td colSpan={2} className="px-6 py-2.5 text-sm text-gray-700 pl-16">
-                              {program}
+                      return (
+                        <React.Fragment key={key}>
+                          <tr className="hover:bg-gray-50 transition-colors">
+                            {countryIdx === 0 && (
+                              <td
+                                className="px-6 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 align-top"
+                                rowSpan={totalRowsForOwner}
+                              >
+                                {owner}
+                              </td>
+                            )}
+                            <td 
+                              className="px-6 py-3 cursor-pointer"
+                              onClick={() => toggleExpand(sdr, owner, country)}
+                            >
+                              <div className="flex items-center text-sm">
+                                <span className="mr-2 text-blue-600 text-xs font-bold">
+                                  {isExpanded ? '▼' : '▶'}
+                                </span>
+                                <span className="font-medium text-gray-900">{country}</span>
+                              </div>
                             </td>
-                            <td className="px-6 py-2.5 text-right text-sm text-gray-900">
-                              {countryData.byProgram[program]}
+                            <td className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
+                              {countryData.total}
                             </td>
-                            <td className="px-6 py-2.5 text-right text-sm text-blue-600">
-                              {calculatePercentage(countryData.byProgram[program], totalDeals)}
+                            <td className="px-6 py-3 text-right text-sm font-medium text-blue-600">
+                              {calculatePercentage(countryData.total, totalDeals)}
                             </td>
                           </tr>
-                        ))}
-                    </React.Fragment>
-                  );
-                });
+                          {isExpanded &&
+                            programs.map(program => (
+                              <tr key={`${key}-${program}`} className="bg-blue-50 hover:bg-blue-100 transition-colors">
+                                <td className="px-6 py-2.5 text-sm text-gray-700 pl-14" colSpan={1}>
+                                  {program}
+                                </td>
+                                <td className="px-6 py-2.5 text-right text-sm font-medium text-gray-900">
+                                  {countryData.byProgram[program]}
+                                </td>
+                                <td className="px-6 py-2.5 text-right text-sm text-blue-600">
+                                  {calculatePercentage(countryData.byProgram[program], totalDeals)}
+                                </td>
+                              </tr>
+                            ))}
+                        </React.Fragment>
+                      );
+                    })}
+                  </React.Fragment>
+                );
               })}
             </tbody>
           </table>
@@ -145,7 +154,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
           const total = getTotalDeals(data);
           return (
             <div key={name} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-              <div className="bg-slate-900 px-6 py-3 border-b border-slate-800">
+              <div className="bg-gray-900 px-6 py-3 border-b border-gray-800">
                 <h4 className="text-base font-semibold text-white">{name}</h4>
               </div>
               <div className="p-6 space-y-3">

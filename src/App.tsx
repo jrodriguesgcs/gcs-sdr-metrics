@@ -91,10 +91,10 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
-          <p className="text-white text-xl font-medium">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-700 text-xl font-medium">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -113,12 +113,12 @@ function App() {
       )}
 
       {/* Header */}
-      <header className="bg-slate-900 shadow-lg border-b border-slate-800">
+      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white">GCS SDR Metrics Dashboard</h1>
-              <p className="text-slate-300 mt-1 text-sm">Active Campaign Performance Tracking</p>
+              <h1 className="text-3xl font-bold text-gray-900">GCS SDR Metrics Dashboard</h1>
+              <p className="text-gray-600 mt-1 text-sm">Active Campaign Performance Tracking</p>
             </div>
             <div className="mt-4 md:mt-0">
               <button
@@ -210,9 +210,9 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 mt-12 border-t border-slate-800">
+      <footer className="bg-white mt-12 border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-6">
-          <p className="text-center text-slate-400 text-sm">
+          <p className="text-center text-gray-500 text-sm">
             © 2025 Global Citizen Solutions - SDR Metrics Dashboard
           </p>
         </div>
