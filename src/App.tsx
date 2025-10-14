@@ -63,7 +63,7 @@ function App() {
 
       // Show success notification
       setRefreshStatus('success');
-      setRefreshMessage('All deals from today and yesterday have been loaded');
+      setRefreshMessage('All deals from today have been loaded');
 
       loadYesterdayDataInBackground();
     } catch (error) {
