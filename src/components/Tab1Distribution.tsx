@@ -35,20 +35,20 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
     const owners = Object.keys(metricsData.dealsByOwner).sort();
 
     return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-          <h3 className="text-xl font-bold text-white">{metricsData.sdrAgent}</h3>
-          <p className="text-blue-100 text-sm mt-1">Total Deals Distributed: {totalDeals}</p>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+        <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
+          <h3 className="text-base font-semibold text-white">{metricsData.sdrAgent}</h3>
+          <p className="text-slate-300 text-sm mt-0.5">Total Deals Distributed: {totalDeals}</p>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Deal Owner</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Country / Program</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Count</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">% of Total</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Deal Owner</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Country / Program</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Count</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">% of Total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -65,38 +65,38 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                   return (
                     <React.Fragment key={key}>
                       <tr
-                        className="hover:bg-gray-50 cursor-pointer transition"
+                        className="hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => toggleExpand(sdr, owner, country)}
                       >
                         {countryIdx === 0 ? (
                           <td
-                            className="px-4 py-3 font-medium text-gray-900 border-r border-gray-200"
+                            className="px-6 py-3 text-sm font-medium text-gray-900 border-r border-gray-200"
                             rowSpan={countries.length}
                           >
                             {owner}
                           </td>
                         ) : null}
-                        <td className="px-4 py-3 text-gray-700">
-                          <div className="flex items-center">
-                            <span className="mr-2 text-blue-600">{isExpanded ? '▼' : '▶'}</span>
-                            <span className="font-medium">{country}</span>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center text-sm">
+                            <span className="mr-2 text-blue-600 text-xs">{isExpanded ? '▼' : '▶'}</span>
+                            <span className="font-medium text-gray-900">{country}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-gray-900">{countryData.total}</td>
-                        <td className="px-4 py-3 text-right text-blue-600 font-medium">
+                        <td className="px-6 py-3 text-right text-sm font-semibold text-gray-900">{countryData.total}</td>
+                        <td className="px-6 py-3 text-right text-sm font-medium text-blue-600">
                           {calculatePercentage(countryData.total, totalDeals)}
                         </td>
                       </tr>
                       {isExpanded &&
                         programs.map(program => (
                           <tr key={`${key}-${program}`} className="bg-blue-50">
-                            <td colSpan={2} className="px-4 py-2 text-sm text-gray-700 pl-12">
+                            <td colSpan={2} className="px-6 py-2.5 text-sm text-gray-700 pl-16">
                               {program}
                             </td>
-                            <td className="px-4 py-2 text-right text-sm text-gray-900">
+                            <td className="px-6 py-2.5 text-right text-sm text-gray-900">
                               {countryData.byProgram[program]}
                             </td>
-                            <td className="px-4 py-2 text-right text-sm text-blue-600">
+                            <td className="px-6 py-2.5 text-right text-sm text-blue-600">
                               {calculatePercentage(countryData.byProgram[program], totalDeals)}
                             </td>
                           </tr>
@@ -114,19 +114,19 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
 
   const renderBookingsSection = () => (
     <div className="mt-8">
-      <h3 className="text-2xl font-bold text-gray-900 mb-4">Bookings Before Distribution</h3>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Bookings Before Distribution</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">Ana Pascoal</h4>
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-2">Ana Pascoal</h4>
           <div className="text-4xl font-bold text-blue-600">{anaMetrics.bookingsBeforeDistribution}</div>
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-sm text-gray-500 mt-2">
             {calculatePercentage(anaMetrics.bookingsBeforeDistribution, getTotalDeals(anaMetrics))} of total deals
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">Ruffa Espejon</h4>
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-2">Ruffa Espejon</h4>
           <div className="text-4xl font-bold text-blue-600">{ruffaMetrics.bookingsBeforeDistribution}</div>
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-sm text-gray-500 mt-2">
             {calculatePercentage(ruffaMetrics.bookingsBeforeDistribution, getTotalDeals(ruffaMetrics))} of total deals
           </p>
         </div>
@@ -136,7 +136,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
 
   const renderPartnerSection = () => (
     <div className="mt-8">
-      <h3 className="text-2xl font-bold text-gray-900 mb-4">Sent to Partner</h3>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Sent to Partner</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
           { name: 'Ana Pascoal', data: anaMetrics },
@@ -144,33 +144,33 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
         ].map(({ name, data }) => {
           const total = getTotalDeals(data);
           return (
-            <div key={name} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3">
-                <h4 className="text-lg font-bold text-white">{name}</h4>
+            <div key={name} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+              <div className="bg-slate-900 px-6 py-3 border-b border-slate-800">
+                <h4 className="text-base font-semibold text-white">{name}</h4>
               </div>
               <div className="p-6 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">AT Legal - Greece</span>
+                  <span className="text-sm text-gray-700">AT Legal - Greece</span>
                   <div className="text-right">
-                    <span className="font-semibold text-gray-900">{data.sentToPartner.atLegalGreece}</span>
+                    <span className="text-sm font-semibold text-gray-900">{data.sentToPartner.atLegalGreece}</span>
                     <span className="text-sm text-blue-600 ml-2">
                       {calculatePercentage(data.sentToPartner.atLegalGreece, total)}
                     </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">MPC Legal - Cyprus</span>
+                  <span className="text-sm text-gray-700">MPC Legal - Cyprus</span>
                   <div className="text-right">
-                    <span className="font-semibold text-gray-900">{data.sentToPartner.mpcLegalCyprus}</span>
+                    <span className="text-sm font-semibold text-gray-900">{data.sentToPartner.mpcLegalCyprus}</span>
                     <span className="text-sm text-blue-600 ml-2">
                       {calculatePercentage(data.sentToPartner.mpcLegalCyprus, total)}
                     </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Rafaela Barbosa - Italy CBD</span>
+                  <span className="text-sm text-gray-700">Rafaela Barbosa - Italy CBD</span>
                   <div className="text-right">
-                    <span className="font-semibold text-gray-900">{data.sentToPartner.rafaelaBarbosaItalyCBD}</span>
+                    <span className="text-sm font-semibold text-gray-900">{data.sentToPartner.rafaelaBarbosaItalyCBD}</span>
                     <span className="text-sm text-blue-600 ml-2">
                       {calculatePercentage(data.sentToPartner.rafaelaBarbosaItalyCBD, total)}
                     </span>
@@ -188,7 +188,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
     <div className="space-y-8">
       {/* Time to Distribution Tables */}
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">Time to Distribution</h3>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Time to Distribution</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TimeToDistribution metrics={anaMetrics} />
           <TimeToDistribution metrics={ruffaMetrics} />
@@ -197,7 +197,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
 
       {/* Distribution Tables */}
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">Deals Distribution by Owner</h3>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Deals Distribution by Owner</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {renderSDRTable(anaMetrics, expandedAna, 'ana')}
           {renderSDRTable(ruffaMetrics, expandedRuffa, 'ruffa')}

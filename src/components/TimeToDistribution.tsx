@@ -10,21 +10,21 @@ export default function TimeToDistribution({ metrics }: TimeToDistributionProps)
 
   if (intervals.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-          <h3 className="text-lg font-bold text-white">{metrics.sdrAgent}</h3>
-          <p className="text-blue-100 text-sm">Time to Distribution</p>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+        <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
+          <h3 className="text-base font-semibold text-white">{metrics.sdrAgent}</h3>
+          <p className="text-slate-300 text-sm mt-0.5">Time to Distribution</p>
         </div>
-        <div className="p-6 text-center text-gray-500">No data available</div>
+        <div className="p-6 text-center text-gray-500 text-sm">No data available</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-        <h3 className="text-lg font-bold text-white">{metrics.sdrAgent}</h3>
-        <p className="text-blue-100 text-sm">Time to Distribution</p>
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+      <div className="bg-slate-900 px-6 py-4 border-b border-slate-800">
+        <h3 className="text-base font-semibold text-white">{metrics.sdrAgent}</h3>
+        <p className="text-slate-300 text-sm mt-0.5">Time to Distribution</p>
       </div>
       <div className="p-6">
         <div className="space-y-3">
@@ -33,16 +33,16 @@ export default function TimeToDistribution({ metrics }: TimeToDistributionProps)
             return (
               <div
                 key={interval}
-                className={`flex justify-between items-center p-4 rounded-lg transition ${
+                className={`flex justify-between items-center p-4 rounded-lg transition-colors ${
                   isTop3
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 shadow-md'
+                    ? 'bg-blue-50 border-2 border-blue-200'
                     : 'bg-gray-50 border border-gray-200'
                 }`}
               >
-                <span className={`font-medium ${isTop3 ? 'text-blue-900' : 'text-gray-700'}`}>
+                <span className={`text-sm font-medium ${isTop3 ? 'text-blue-900' : 'text-gray-700'}`}>
                   {interval}
                 </span>
-                <span className={`font-bold ${isTop3 ? 'text-blue-700' : 'text-gray-600'}`}>
+                <span className={`text-sm font-semibold ${isTop3 ? 'text-blue-700' : 'text-gray-600'}`}>
                   {count} {count === 1 ? 'deal' : 'deals'}
                 </span>
               </div>
