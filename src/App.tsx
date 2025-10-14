@@ -19,6 +19,7 @@ function App() {
   const [yesterdayDeals, setYesterdayDeals] = useState<Deal[]>([]);
   const [metrics, setMetrics] = useState<SDRMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isYesterdayLoading, setIsYesterdayLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState<LoadingProgressType>({
     phase: 'idle',
     message: '',
@@ -74,11 +75,14 @@ function App() {
   };
 
   const loadYesterdayDataInBackground = async () => {
+    setIsYesterdayLoading(true);
     try {
       const { deals: yesterdayData } = await fetchAllDealsWithCustomFields(() => {});
       setYesterdayDeals(yesterdayData);
     } catch (error) {
       console.error('Error loading yesterday data:', error);
+    } finally {
+      setIsYesterdayLoading(false);
     }
   };
 
@@ -88,13 +92,16 @@ function App() {
     
     try {
       const { deals: refreshedDeals } = await fetchAllDealsWithCustomFields(setLoadingProgress);
+      
       if (dateFilter === 'today') {
         setDeals(refreshedDeals);
+        const newMetrics = calculateMetrics(refreshedDeals, 'today');
+        setMetrics(newMetrics);
       } else {
         setYesterdayDeals(refreshedDeals);
+        const newMetrics = calculateMetrics(refreshedDeals, 'yesterday');
+        setMetrics(newMetrics);
       }
-      const newMetrics = calculateMetrics(refreshedDeals, dateFilter);
-      setMetrics(newMetrics);
       
       setRefreshStatus('success');
       setRefreshMessage('All deals from today and yesterday have been loaded');
@@ -198,14 +205,21 @@ function App() {
                   </button>
                   <button
                     onClick={() => handleDateFilterChange('yesterday')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                    className={`px-4 py-2 rounded-lg font-medium transition-all text-sm relative ${
                       dateFilter === 'yesterday'
                         ? 'bg-blue-600 text-white shadow-md'
+                        : isYesterdayLoading
+                        ? 'bg-gray-100 text-gray-400 cursor-wait'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
-                    disabled={yesterdayDeals.length === 0}
+                    disabled={isYesterdayLoading}
                   >
-                    Yesterday
+                    {isYesterdayLoading && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></span>
+                      </span>
+                    )}
+                    <span className={isYesterdayLoading ? 'invisible' : ''}>Yesterday</span>
                   </button>
                 </div>
                 <span className="text-sm text-gray-500">({formatDate(start)})</span>
