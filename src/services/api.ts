@@ -1,7 +1,7 @@
-import { Deal, DealCustomFieldMeta, LoadingProgress } from '../types';
+import { Deal, DealCustomFieldMeta, LoadingProgress, User } from '../types';
 
 const API_BASE = '/api/proxy';
-const RATE_LIMIT = 5; // 5 requests per second
+const RATE_LIMIT = 5;
 const WORKER_COUNT = 20;
 
 class RateLimiter {
@@ -53,22 +53,48 @@ class RateLimiter {
 const rateLimiter = new RateLimiter();
 
 async function fetchFromProxy(endpoint: string): Promise<any> {
-  const isDev = import.meta.env.DEV;
-  
-  let url: string;
-  if (isDev) {
-    // Local development: direct call (won't work, needs Vercel)
-    url = `${API_BASE}?endpoint=${encodeURIComponent(endpoint)}`;
-  } else {
-    // Production: use Vercel serverless function
-    url = `${API_BASE}?endpoint=${encodeURIComponent(endpoint)}`;
-  }
-  
+  const url = `${API_BASE}?endpoint=${encodeURIComponent(endpoint)}`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`API Error: ${response.statusText}`);
   }
   return response.json();
+}
+
+export async function fetchUsers(
+  onProgress: (progress: LoadingProgress) => void
+): Promise<Map<string, string>> {
+  onProgress({
+    phase: 'metadata',
+    message: 'Fetching users list...',
+    current: 0,
+    total: 1,
+    percentage: 0,
+  });
+
+  const userMap = new Map<string, string>();
+  let offset = 0;
+  const limit = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await rateLimiter.throttle(() =>
+      fetchFromProxy(`/api/3/users?limit=${limit}&offset=${offset}`)
+    );
+
+    if (data.users && data.users.length > 0) {
+      data.users.forEach((user: User) => {
+        const fullName = `${user.firstName} ${user.lastName}`.trim();
+        userMap.set(user.id, fullName || `User ${user.id}`);
+      });
+      offset += limit;
+      hasMore = data.users.length === limit;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return userMap;
 }
 
 export async function fetchDealCustomFieldMeta(
@@ -79,15 +105,15 @@ export async function fetchDealCustomFieldMeta(
     message: 'Fetching custom field metadata...',
     current: 0,
     total: 1,
-    percentage: 0,
+    percentage: 50,
   });
 
-  const data = await rateLimiter.throttle(() => 
+  const data = await rateLimiter.throttle(() =>
     fetchFromProxy('/api/3/dealCustomFieldMeta?limit=100')
   );
 
   const fieldMap = new Map<string, string>();
-  
+
   if (data.dealCustomFieldMeta) {
     data.dealCustomFieldMeta.forEach((field: DealCustomFieldMeta) => {
       fieldMap.set(field.id, field.fieldLabel);
@@ -113,10 +139,9 @@ export async function fetchDeals(
   const limit = 100;
   let hasMore = true;
 
-  // Calculate date 7 days ago for filtering (covers today + yesterday + buffer)
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const dateFilter = sevenDaysAgo.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  const dateFilter = sevenDaysAgo.toISOString().split('T')[0];
 
   onProgress({
     phase: 'deals',
@@ -127,24 +152,23 @@ export async function fetchDeals(
   });
 
   while (hasMore) {
-    // Fetch deals created in the last 7 days, sorted by most recent first
     const endpoint = `/api/3/deals?limit=${limit}&offset=${offset}&orders[cdate]=DESC&filters[cdate_after]=${dateFilter}`;
-    
-    const data = await rateLimiter.throttle(() =>
-      fetchFromProxy(endpoint)
-    );
+
+    const data = await rateLimiter.throttle(() => fetchFromProxy(endpoint));
 
     if (data.deals && data.deals.length > 0) {
-      deals.push(...data.deals.map((d: any) => ({
-        id: d.id,
-        title: d.title,
-        owner: d.owner || '',
-        createdDate: d.cdate || '',
-        customFields: {},
-      })));
+      deals.push(
+        ...data.deals.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          owner: d.owner || '',
+          createdDate: d.cdate || '',
+          customFields: {},
+        }))
+      );
 
       offset += limit;
-      
+
       onProgress({
         phase: 'deals',
         message: `Fetched ${deals.length} recent deals...`,
@@ -154,8 +178,7 @@ export async function fetchDeals(
       });
 
       hasMore = data.deals.length === limit;
-      
-      // Safety: Stop if we've fetched more than 500 deals (shouldn't happen with 7-day filter)
+
       if (deals.length >= 500) {
         hasMore = false;
       }
@@ -232,11 +255,12 @@ export async function fetchDealCustomFields(
 
 export async function fetchAllDealsWithCustomFields(
   onProgress: (progress: LoadingProgress) => void
-): Promise<Deal[]> {
-  // Phase 1: Metadata
+): Promise<{ deals: Deal[]; userMap: Map<string, string> }> {
+  // Phase 1: Metadata (users + field meta)
+  const userMap = await fetchUsers(onProgress);
   await fetchDealCustomFieldMeta(onProgress);
 
-  // Phase 2: Deals (last 7 days only)
+  // Phase 2: Deals
   const deals = await fetchDeals(onProgress);
 
   // Phase 3: Custom Fields
@@ -254,9 +278,13 @@ export async function fetchAllDealsWithCustomFields(
 
   const enrichedDeals = deals.map(deal => {
     const fieldValues = customFieldsMap.get(deal.id) || {};
-    
+
+    // Map owner ID to name
+    const ownerName = userMap.get(deal.owner) || deal.owner;
+
     return {
       ...deal,
+      owner: ownerName,
       customFields: {
         sdrAgent: fieldValues['74'] || '',
         distributionTime: fieldValues['15'] || '',
@@ -267,6 +295,7 @@ export async function fetchAllDealsWithCustomFields(
         primaryProgram: fieldValues['52'] || '',
         calendlyEventCreated: fieldValues['75'] || '',
         sendToAutomation: fieldValues['54'] || '',
+        dealCreationDateTime: fieldValues['78'] || '',
       },
     };
   });
@@ -279,5 +308,5 @@ export async function fetchAllDealsWithCustomFields(
     percentage: 100,
   });
 
-  return enrichedDeals;
+  return { deals: enrichedDeals, userMap };
 }

@@ -13,12 +13,19 @@ export interface Deal {
     primaryProgram?: string;
     calendlyEventCreated?: string;
     sendToAutomation?: string;
+    dealCreationDateTime?: string;
   };
 }
 
 export interface DealCustomFieldMeta {
   id: string;
   fieldLabel: string;
+}
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
 }
 
 export interface LoadingProgress {
@@ -45,6 +52,9 @@ export interface SDRMetrics {
         };
       };
     };
+  };
+  timeToDistribution: {
+    [interval: string]: number;
   };
   bookingsBeforeDistribution: number;
   sentToPartner: {

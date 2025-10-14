@@ -1,12 +1,32 @@
 import { Deal, SDRMetrics, DateFilter } from '../types';
 import { getDateRange, isDateInRange } from './dateUtils';
 
+function calculateTimeInterval(startDate: string, endDate: string): string | null {
+  if (!startDate || !endDate) return null;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Exclude negative values (creation after distribution)
+  if (end < start) return null;
+
+  const diffMs = end.getTime() - start.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin <= 30) return '0-30 min';
+  if (diffMin <= 60) return '30-60 min';
+
+  const diffHrs = Math.floor(diffMin / 60);
+  return `${diffHrs}-${diffHrs + 1} hrs`;
+}
+
 export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetrics[] {
   const { start, end } = getDateRange(dateFilter);
-  
+
   const anaMetrics: SDRMetrics = {
     sdrAgent: 'Ana Pascoal',
     dealsByOwner: {},
+    timeToDistribution: {},
     bookingsBeforeDistribution: 0,
     sentToPartner: {
       atLegalGreece: 0,
@@ -29,6 +49,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
   const ruffaMetrics: SDRMetrics = {
     sdrAgent: 'Ruffa Espejon',
     dealsByOwner: {},
+    timeToDistribution: {},
     bookingsBeforeDistribution: 0,
     sentToPartner: {
       atLegalGreece: 0,
@@ -51,15 +72,19 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
   deals.forEach(deal => {
     const { customFields } = deal;
     const sdrAgent = customFields.sdrAgent?.trim();
-    
+
     if (!sdrAgent || (sdrAgent !== 'Ana Pascoal' && sdrAgent !== 'Ruffa Espejon')) {
       return;
     }
 
     const metrics = sdrAgent === 'Ana Pascoal' ? anaMetrics : ruffaMetrics;
-    
-    // Distribution metrics
-    if (customFields.distributionTime && isDateInRange(customFields.distributionTime, start, end)) {
+
+    // Distribution metrics - only if sendToAutomation is blank
+    if (
+      customFields.distributionTime &&
+      isDateInRange(customFields.distributionTime, start, end) &&
+      !customFields.sendToAutomation
+    ) {
       const owner = deal.owner || 'Unassigned';
       const country = customFields.primaryCountry || 'Unknown';
       const program = customFields.primaryProgram || 'Unknown';
@@ -80,8 +105,17 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
 
       metrics.dealsByOwner[owner].total++;
       metrics.dealsByOwner[owner].byCountry[country].total++;
-      metrics.dealsByOwner[owner].byCountry[country].byProgram[program] = 
+      metrics.dealsByOwner[owner].byCountry[country].byProgram[program] =
         (metrics.dealsByOwner[owner].byCountry[country].byProgram[program] || 0) + 1;
+
+      // Time to Distribution calculation
+      const interval = calculateTimeInterval(
+        customFields.dealCreationDateTime || '',
+        customFields.distributionTime
+      );
+      if (interval) {
+        metrics.timeToDistribution[interval] = (metrics.timeToDistribution[interval] || 0) + 1;
+      }
 
       // Bookings before distribution
       if (customFields.calendlyEventCreated && customFields.distributionTime) {
@@ -118,7 +152,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     // Lost metrics (with Lost Date Time)
     if (customFields.lostDateTime && isDateInRange(customFields.lostDateTime, start, end)) {
       const lostReason = customFields.mqlLostReason?.trim();
-      
+
       if (lostReason === 'Service not Available') {
         metrics.automationMetrics.serviceNotAvailable++;
       } else if (lostReason === 'Future Opportunities') {
