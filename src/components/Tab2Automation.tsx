@@ -8,10 +8,6 @@ interface Tab2Props {
 export default function Tab2Automation({ metrics }: Tab2Props) {
   const [anaMetrics, ruffaMetrics] = metrics;
 
-  const getTotalDeals = (metricsData: SDRMetrics) => {
-    return Object.values(metricsData.dealsByOwner).reduce((sum, owner) => sum + owner.total, 0);
-  };
-
   const getTotalAutomation = (auto: SDRMetrics['automationMetrics']) => {
     return (
       auto.noInterest +
@@ -27,7 +23,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
   };
 
   const renderSDRAutomationTable = (metricsData: SDRMetrics) => {
-    const totalDeals = getTotalDeals(metricsData);
+    const totalAgentDeals = metricsData.totalAgentDeals;
     const totalAutomation = getTotalAutomation(metricsData.automationMetrics);
     const auto = metricsData.automationMetrics;
 
@@ -35,7 +31,9 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
         <div className="bg-white px-6 py-4 border-b border-gray-200">
           <h3 className="text-base font-semibold text-gray-900">{metricsData.sdrAgent}</h3>
-          <p className="text-gray-600 text-sm mt-0.5">Total Automation Actions: {totalAutomation}</p>
+          <p className="text-gray-600 text-sm mt-0.5">
+            Total Automation Actions: {totalAutomation} ({calculatePercentage(totalAutomation, totalAgentDeals)} of {totalAgentDeals} total deals)
+          </p>
         </div>
 
         <div className="overflow-x-auto">
@@ -44,7 +42,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Automation Type</th>
                 <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Count</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">% of Agent Total</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">% of Agent Total Deals</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -57,7 +55,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.noInterest}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.noInterest, totalDeals)}
+                  {calculatePercentage(auto.noInterest, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -70,7 +68,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.portugalD7}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.portugalD7, totalDeals)}
+                  {calculatePercentage(auto.portugalD7, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -83,7 +81,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.portugalTax}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.portugalTax, totalDeals)}
+                  {calculatePercentage(auto.portugalTax, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -96,7 +94,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.portugalLegal}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.portugalLegal, totalDeals)}
+                  {calculatePercentage(auto.portugalLegal, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -109,7 +107,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.serviceNotAvailable}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.serviceNotAvailable, totalDeals)}
+                  {calculatePercentage(auto.serviceNotAvailable, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -122,7 +120,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.futureOpportunity}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.futureOpportunity, totalDeals)}
+                  {calculatePercentage(auto.futureOpportunity, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -135,7 +133,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.unresponsiveUnqualified}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.unresponsiveUnqualified, totalDeals)}
+                  {calculatePercentage(auto.unresponsiveUnqualified, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -148,7 +146,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.tagToDelete}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.tagToDelete, totalDeals)}
+                  {calculatePercentage(auto.tagToDelete, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -161,7 +159,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.ineligible}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.ineligible, totalDeals)}
+                  {calculatePercentage(auto.ineligible, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -169,7 +167,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 <td className="px-6 py-4 text-sm text-gray-900">Total</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{totalAutomation}</td>
                 <td className="px-6 py-4 text-right text-sm text-blue-700">
-                  {calculatePercentage(totalAutomation, totalDeals)}
+                  {calculatePercentage(totalAutomation, totalAgentDeals)}
                 </td>
               </tr>
             </tbody>

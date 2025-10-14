@@ -40,6 +40,7 @@ export type DateFilter = 'today' | 'yesterday';
 
 export interface SDRMetrics {
   sdrAgent: string;
+  totalAgentDeals: number;
   dealsByOwner: {
     [owner: string]: {
       total: number;

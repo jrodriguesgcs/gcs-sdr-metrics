@@ -7,7 +7,6 @@ function calculateTimeInterval(startDate: string, endDate: string): string | nul
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  // Exclude negative values (creation after distribution)
   if (end < start) return null;
 
   const diffMs = end.getTime() - start.getTime();
@@ -25,6 +24,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
 
   const anaMetrics: SDRMetrics = {
     sdrAgent: 'Ana Pascoal',
+    totalAgentDeals: 0,
     dealsByOwner: {},
     timeToDistribution: {},
     bookingsBeforeDistribution: 0,
@@ -48,6 +48,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
 
   const ruffaMetrics: SDRMetrics = {
     sdrAgent: 'Ruffa Espejon',
+    totalAgentDeals: 0,
     dealsByOwner: {},
     timeToDistribution: {},
     bookingsBeforeDistribution: 0,
@@ -69,6 +70,26 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     },
   };
 
+  // First pass: Count total deals per agent (created on filtered date)
+  deals.forEach(deal => {
+    const { customFields } = deal;
+    const sdrAgent = customFields.sdrAgent?.trim();
+
+    if (!sdrAgent || (sdrAgent !== 'Ana Pascoal' && sdrAgent !== 'Ruffa Espejon')) {
+      return;
+    }
+
+    // Check if deal was created in the date range
+    if (isDateInRange(deal.createdDate, start, end)) {
+      if (sdrAgent === 'Ana Pascoal') {
+        anaMetrics.totalAgentDeals++;
+      } else {
+        ruffaMetrics.totalAgentDeals++;
+      }
+    }
+  });
+
+  // Second pass: Calculate all metrics
   deals.forEach(deal => {
     const { customFields } = deal;
     const sdrAgent = customFields.sdrAgent?.trim();
@@ -79,11 +100,12 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
 
     const metrics = sdrAgent === 'Ana Pascoal' ? anaMetrics : ruffaMetrics;
 
-    // Distribution metrics - only if sendToAutomation is blank
+    // Distribution metrics - only if sendToAutomation is blank AND partner is blank
     if (
       customFields.distributionTime &&
       isDateInRange(customFields.distributionTime, start, end) &&
-      !customFields.sendToAutomation
+      !customFields.sendToAutomation &&
+      !customFields.partner
     ) {
       const owner = deal.owner || 'Unassigned';
       const country = customFields.primaryCountry || 'Unknown';
@@ -125,9 +147,16 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
           metrics.bookingsBeforeDistribution++;
         }
       }
+    }
 
-      // Partner metrics
-      const partner = customFields.partner?.trim();
+    // Partner metrics (distribution time in range, sendToAutomation blank, but partner NOT blank)
+    if (
+      customFields.distributionTime &&
+      isDateInRange(customFields.distributionTime, start, end) &&
+      !customFields.sendToAutomation &&
+      customFields.partner
+    ) {
+      const partner = customFields.partner.trim();
       if (partner === 'AT Legal - Greece') {
         metrics.sentToPartner.atLegalGreece++;
       } else if (partner === 'MPC Legal') {
@@ -137,9 +166,8 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       }
     }
 
-    // Automation metrics - NO FILTER on distribution time
-    // Check if the deal was created in the date range
-    if (customFields.sdrAgent && isDateInRange(deal.createdDate, start, end)) {
+    // Automation metrics - based on deal creation date
+    if (isDateInRange(deal.createdDate, start, end)) {
       const automation = customFields.sendToAutomation?.trim();
       if (automation === 'Interest not Identified') {
         metrics.automationMetrics.noInterest++;

@@ -22,7 +22,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
     }
   };
 
-  const getTotalDeals = (metricsData: SDRMetrics) => {
+  const getTotalDealsDistributed = (metricsData: SDRMetrics) => {
     return Object.values(metricsData.dealsByOwner).reduce((sum, owner) => sum + owner.total, 0);
   };
 
@@ -31,14 +31,17 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
     expanded: { [key: string]: boolean },
     sdr: 'ana' | 'ruffa'
   ) => {
-    const totalDeals = getTotalDeals(metricsData);
+    const totalDistributed = getTotalDealsDistributed(metricsData);
+    const totalAgentDeals = metricsData.totalAgentDeals;
     const owners = Object.keys(metricsData.dealsByOwner).sort();
 
     return (
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
         <div className="bg-white px-6 py-4 border-b border-gray-200">
           <h3 className="text-base font-semibold text-gray-900">{metricsData.sdrAgent}</h3>
-          <p className="text-gray-600 text-sm mt-0.5">Total Deals Distributed: {totalDeals}</p>
+          <p className="text-gray-600 text-sm mt-0.5">
+            Total Deals Distributed to Sales: {totalDistributed} ({calculatePercentage(totalDistributed, totalAgentDeals)} of {totalAgentDeals} total deals)
+          </p>
         </div>
 
         <div className="overflow-x-auto">
@@ -48,7 +51,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Deal Owner</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Country / Program</th>
                 <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Count</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">% of Total</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">% of Agent Total Deals</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -100,7 +103,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                               {countryData.total}
                             </td>
                             <td className="px-6 py-3 text-right text-sm font-medium text-blue-600">
-                              {calculatePercentage(countryData.total, totalDeals)}
+                              {calculatePercentage(countryData.total, totalAgentDeals)}
                             </td>
                           </tr>
                           {isExpanded &&
@@ -113,7 +116,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                                   {countryData.byProgram[program]}
                                 </td>
                                 <td className="px-6 py-2.5 text-right text-sm text-blue-600">
-                                  {calculatePercentage(countryData.byProgram[program], totalDeals)}
+                                  {calculatePercentage(countryData.byProgram[program], totalAgentDeals)}
                                 </td>
                               </tr>
                             ))}
@@ -138,14 +141,14 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
           <h4 className="text-sm font-semibold text-gray-700 mb-2">Ana Pascoal</h4>
           <div className="text-4xl font-bold text-blue-600">{anaMetrics.bookingsBeforeDistribution}</div>
           <p className="text-sm text-gray-500 mt-2">
-            {calculatePercentage(anaMetrics.bookingsBeforeDistribution, getTotalDeals(anaMetrics))} of total deals
+            {calculatePercentage(anaMetrics.bookingsBeforeDistribution, anaMetrics.totalAgentDeals)} of agent total deals
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <h4 className="text-sm font-semibold text-gray-700 mb-2">Ruffa Espejon</h4>
           <div className="text-4xl font-bold text-blue-600">{ruffaMetrics.bookingsBeforeDistribution}</div>
           <p className="text-sm text-gray-500 mt-2">
-            {calculatePercentage(ruffaMetrics.bookingsBeforeDistribution, getTotalDeals(ruffaMetrics))} of total deals
+            {calculatePercentage(ruffaMetrics.bookingsBeforeDistribution, ruffaMetrics.totalAgentDeals)} of agent total deals
           </p>
         </div>
       </div>
@@ -160,7 +163,6 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
           { name: 'Ana Pascoal', data: anaMetrics },
           { name: 'Ruffa Espejon', data: ruffaMetrics },
         ].map(({ name, data }) => {
-          const total = getTotalDeals(data);
           return (
             <div key={name} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
               <div className="bg-white px-6 py-3 border-b border-gray-200">
@@ -172,7 +174,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                   <div className="text-right">
                     <span className="text-sm font-semibold text-gray-900">{data.sentToPartner.atLegalGreece}</span>
                     <span className="text-sm text-blue-600 ml-2">
-                      {calculatePercentage(data.sentToPartner.atLegalGreece, total)}
+                      {calculatePercentage(data.sentToPartner.atLegalGreece, data.totalAgentDeals)}
                     </span>
                   </div>
                 </div>
@@ -181,7 +183,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                   <div className="text-right">
                     <span className="text-sm font-semibold text-gray-900">{data.sentToPartner.mpcLegalCyprus}</span>
                     <span className="text-sm text-blue-600 ml-2">
-                      {calculatePercentage(data.sentToPartner.mpcLegalCyprus, total)}
+                      {calculatePercentage(data.sentToPartner.mpcLegalCyprus, data.totalAgentDeals)}
                     </span>
                   </div>
                 </div>
@@ -190,7 +192,7 @@ export default function Tab1Distribution({ metrics }: Tab1Props) {
                   <div className="text-right">
                     <span className="text-sm font-semibold text-gray-900">{data.sentToPartner.rafaelaBarbosaItalyCBD}</span>
                     <span className="text-sm text-blue-600 ml-2">
-                      {calculatePercentage(data.sentToPartner.rafaelaBarbosaItalyCBD, total)}
+                      {calculatePercentage(data.sentToPartner.rafaelaBarbosaItalyCBD, data.totalAgentDeals)}
                     </span>
                   </div>
                 </div>
