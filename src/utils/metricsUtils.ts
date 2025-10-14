@@ -70,7 +70,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     },
   };
 
-  // First pass: Count total deals per agent (created on filtered date)
+  // First pass: Count total deals per agent with ANY activity in the date range
   deals.forEach(deal => {
     const { customFields } = deal;
     const sdrAgent = customFields.sdrAgent?.trim();
@@ -79,8 +79,16 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       return;
     }
 
-    // Check if deal was created in the date range
-    if (isDateInRange(deal.createdDate, start, end)) {
+    // Check if deal has ANY activity in the date range:
+    // - Created in range, OR
+    // - Distributed in range, OR  
+    // - Lost in range
+    const hasActivity = 
+      isDateInRange(deal.createdDate, start, end) ||
+      (customFields.distributionTime && isDateInRange(customFields.distributionTime, start, end)) ||
+      (customFields.lostDateTime && isDateInRange(customFields.lostDateTime, start, end));
+
+    if (hasActivity) {
       if (sdrAgent === 'Ana Pascoal') {
         anaMetrics.totalAgentDeals++;
       } else {
