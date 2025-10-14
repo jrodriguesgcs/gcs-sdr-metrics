@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Tab1Distribution from './components/Tab1Distribution';
 import Tab2Automation from './components/Tab2Automation';
-import { Deal, LoadingProgress as LoadingProgressType, DateFilter, SDRMetrics } from './types';
+import { Deal, DateFilter, SDRMetrics } from './types';
 import { fetchAllDealsWithCustomFields } from './services/api';
 import { calculateMetrics } from './utils/metricsUtils';
 import { formatDate, getDateRange } from './utils/dateUtils';
