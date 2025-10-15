@@ -32,8 +32,8 @@ export default function TabStats({ metrics }: TabStatsProps) {
               <tr className="hover:bg-blue-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Distributed Deals to Sales</div>
-                    <div className="text-sm text-gray-500">DISTRIBUTION Time not blank, Send to Automation blank</div>
+                    <div className="text-sm font-medium text-gray-900">Distributed to Sales</div>
+                    <div className="text-sm text-gray-500">Number of deals distributed to sales</div>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
@@ -47,8 +47,8 @@ export default function TabStats({ metrics }: TabStatsProps) {
               <tr className="hover:bg-purple-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Leads Sent to Automation</div>
-                    <div className="text-sm text-gray-500">Send to Automation not blank, created in filtered date</div>
+                    <div className="text-sm font-medium text-gray-900">Sent to Automation</div>
+                    <div className="text-sm text-gray-500">Number of deals sent to automation</div>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
@@ -59,11 +59,26 @@ export default function TabStats({ metrics }: TabStatsProps) {
                 </td>
               </tr>
 
+              <tr className="hover:bg-green-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Sent to Partners</div>
+                    <div className="text-sm text-gray-500">Number of deals sent to partners</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                  {stats.sentToPartners}
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
+                  {calculatePercentage(stats.sentToPartners, totalAgentDeals)}
+                </td>
+              </tr>
+
               <tr className="hover:bg-red-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Deals MQL Lost</div>
-                    <div className="text-sm text-gray-500">MQL Lost Reason not blank, Lost Date Time in filtered date</div>
+                    <div className="text-sm font-medium text-gray-900">MQL Lost</div>
+                    <div className="text-sm text-gray-500">Number of MQL deals lost</div>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
@@ -78,7 +93,7 @@ export default function TabStats({ metrics }: TabStatsProps) {
                 <td className="px-6 py-4">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Deals to Address</div>
-                    <div className="text-sm text-gray-500">Created in filtered date, no Distribution/Lost/Automation</div>
+                    <div className="text-sm text-gray-500">Number of deals to be addressed</div>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
@@ -91,10 +106,7 @@ export default function TabStats({ metrics }: TabStatsProps) {
 
               <tr className="bg-blue-50 font-bold border-t-2 border-blue-200">
                 <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm text-gray-900">Total Agent Deals</div>
-                    <div className="text-sm text-gray-500">Any activity in filtered date (created/distributed/lost)</div>
-                  </div>
+                  <div className="text-sm text-gray-900">Total Agent Deals</div>
                 </td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">
                   {totalAgentDeals}

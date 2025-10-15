@@ -14,6 +14,7 @@ export interface Deal {
     calendlyEventCreated?: string;
     sendToAutomation?: string;
     dealCreationDateTime?: string;
+    sendToAutomationDateTime?: string;
   };
 }
 
@@ -77,6 +78,7 @@ export interface SDRMetrics {
   stats: {
     distributedToSales: number;
     sentToAutomation: number;
+    sentToPartners: number;
     mqlLost: number;
     toAddress: number;
   };

@@ -296,6 +296,7 @@ export async function fetchAllDealsWithCustomFields(
         calendlyEventCreated: fieldValues['75'] || '',
         sendToAutomation: fieldValues['54'] || '',
         dealCreationDateTime: fieldValues['78'] || '',
+        sendToAutomationDateTime: fieldValues['95'] || '',
       },
     };
   });

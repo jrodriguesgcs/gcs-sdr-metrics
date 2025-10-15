@@ -47,6 +47,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     stats: {
       distributedToSales: 0,
       sentToAutomation: 0,
+      sentToPartners: 0,
       mqlLost: 0,
       toAddress: 0,
     },
@@ -77,36 +78,13 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     stats: {
       distributedToSales: 0,
       sentToAutomation: 0,
+      sentToPartners: 0,
       mqlLost: 0,
       toAddress: 0,
     },
   };
 
-  // First pass: Count total deals per agent with ANY activity in the date range
-  deals.forEach(deal => {
-    const { customFields } = deal;
-    const sdrAgent = customFields.sdrAgent?.trim();
-
-    if (!sdrAgent || (sdrAgent !== 'Ana Pascoal' && sdrAgent !== 'Ruffa Espejon')) {
-      return;
-    }
-
-    // Check if deal has ANY activity in the date range
-    const hasActivity =
-      isDateInRange(deal.createdDate, start, end) ||
-      (customFields.distributionTime && isDateInRange(customFields.distributionTime, start, end)) ||
-      (customFields.lostDateTime && isDateInRange(customFields.lostDateTime, start, end));
-
-    if (hasActivity) {
-      if (sdrAgent === 'Ana Pascoal') {
-        anaMetrics.totalAgentDeals++;
-      } else {
-        ruffaMetrics.totalAgentDeals++;
-      }
-    }
-  });
-
-  // Second pass: Calculate all metrics
+  // Process all metrics
   deals.forEach(deal => {
     const { customFields } = deal;
     const sdrAgent = customFields.sdrAgent?.trim();
@@ -118,23 +96,38 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     const metrics = sdrAgent === 'Ana Pascoal' ? anaMetrics : ruffaMetrics;
 
     // STATS: Distributed to Sales
+    // DISTRIBUTION Time in range, not sent to automation, not sent to partner
     if (
       customFields.distributionTime &&
       isDateInRange(customFields.distributionTime, start, end) &&
-      !customFields.sendToAutomation
+      !customFields.sendToAutomation &&
+      !customFields.partner
     ) {
       metrics.stats.distributedToSales++;
     }
 
     // STATS: Sent to Automation
+    // Send to Automation Date Time in range AND Send to Automation not blank
     if (
-      customFields.sendToAutomation &&
-      isDateInRange(deal.createdDate, start, end)
+      customFields.sendToAutomationDateTime &&
+      isDateInRange(customFields.sendToAutomationDateTime, start, end) &&
+      customFields.sendToAutomation
     ) {
       metrics.stats.sentToAutomation++;
     }
 
+    // STATS: Sent to Partners
+    // DISTRIBUTION Time in range AND Partner not blank
+    if (
+      customFields.distributionTime &&
+      isDateInRange(customFields.distributionTime, start, end) &&
+      customFields.partner
+    ) {
+      metrics.stats.sentToPartners++;
+    }
+
     // STATS: MQL Lost
+    // MQL Lost Reason not blank AND Lost Date Time in range
     if (
       customFields.mqlLostReason &&
       customFields.lostDateTime &&
@@ -144,6 +137,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     }
 
     // STATS: To Address
+    // Created in range, no Distribution/Lost/Send to Automation
     if (
       customFields.dealCreationDateTime &&
       isDateInRange(customFields.dealCreationDateTime, start, end) &&
@@ -220,9 +214,13 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       }
     }
 
-    // Automation metrics - based on deal creation date
-    if (isDateInRange(deal.createdDate, start, end)) {
-      const automation = customFields.sendToAutomation?.trim();
+    // Automation metrics - Send to Automation Date Time in range AND Send to Automation not blank
+    if (
+      customFields.sendToAutomationDateTime &&
+      isDateInRange(customFields.sendToAutomationDateTime, start, end) &&
+      customFields.sendToAutomation
+    ) {
+      const automation = customFields.sendToAutomation.trim();
       if (automation === 'Interest not Identified') {
         metrics.automationMetrics.noInterest++;
       } else if (automation === 'Paid Consultation Portugal D7') {
@@ -251,6 +249,21 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       }
     }
   });
+
+  // Calculate Total Agent Deals as sum of all stats categories
+  anaMetrics.totalAgentDeals =
+    anaMetrics.stats.distributedToSales +
+    anaMetrics.stats.sentToAutomation +
+    anaMetrics.stats.sentToPartners +
+    anaMetrics.stats.mqlLost +
+    anaMetrics.stats.toAddress;
+
+  ruffaMetrics.totalAgentDeals =
+    ruffaMetrics.stats.distributedToSales +
+    ruffaMetrics.stats.sentToAutomation +
+    ruffaMetrics.stats.sentToPartners +
+    ruffaMetrics.stats.mqlLost +
+    ruffaMetrics.stats.toAddress;
 
   return [anaMetrics, ruffaMetrics];
 }
