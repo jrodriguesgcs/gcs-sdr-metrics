@@ -4,6 +4,7 @@ import LoadingProgress from './components/LoadingProgress';
 import RefreshNotification from './components/RefreshNotification';
 import Tab1Distribution from './components/Tab1Distribution';
 import Tab2Automation from './components/Tab2Automation';
+import TabStats from './components/TabStats';
 import { Deal, DateFilter, SDRMetrics, LoadingProgress as LoadingProgressType } from './types';
 import { fetchAllDealsWithCustomFields } from './services/api';
 import { calculateMetrics } from './utils/metricsUtils';
@@ -11,9 +12,11 @@ import { formatDate, getDateRange } from './utils/dateUtils';
 
 const APP_PASSWORD = 'Welcome-GCS-Dashboard-2025';
 
+type TabType = 'distribution' | 'automation' | 'stats';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<'distribution' | 'automation'>('distribution');
+  const [activeTab, setActiveTab] = useState<TabType>('distribution');
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [deals, setDeals] = useState<Deal[]>([]);
   const [yesterdayDeals, setYesterdayDeals] = useState<Deal[]>([]);
@@ -61,9 +64,8 @@ function App() {
       const todayMetrics = calculateMetrics(todayDeals, 'today');
       setMetrics(todayMetrics);
 
-      // Show success notification
       setRefreshStatus('success');
-      setRefreshMessage('All deals from today have been loaded');
+      setRefreshMessage('All deals from today and yesterday have been loaded');
 
       loadYesterdayDataInBackground();
     } catch (error) {
@@ -89,10 +91,10 @@ function App() {
   const handleRefresh = async () => {
     setRefreshStatus('loading');
     setRefreshMessage('Refreshing data...');
-    
+
     try {
       const { deals: refreshedDeals } = await fetchAllDealsWithCustomFields(setLoadingProgress);
-      
+
       if (dateFilter === 'today') {
         setDeals(refreshedDeals);
         const newMetrics = calculateMetrics(refreshedDeals, 'today');
@@ -102,7 +104,7 @@ function App() {
         const newMetrics = calculateMetrics(refreshedDeals, 'yesterday');
         setMetrics(newMetrics);
       }
-      
+
       setRefreshStatus('success');
       setRefreshMessage('All deals from today and yesterday have been loaded');
     } catch (error) {
@@ -127,19 +129,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Loading Progress Modal */}
       {isLoading && <LoadingProgress progress={loadingProgress} />}
 
-      {/* Refresh Notification */}
       {refreshStatus !== 'idle' && (
-        <RefreshNotification 
-          status={refreshStatus} 
+        <RefreshNotification
+          status={refreshStatus}
           message={refreshMessage}
           onClose={() => setRefreshStatus('idle')}
         />
       )}
 
-      {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -160,11 +159,9 @@ function App() {
         </div>
       </header>
 
-      {/* Tabs & Filters */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between py-4">
-            {/* Tab Navigation */}
             <div className="flex space-x-2">
               <button
                 onClick={() => setActiveTab('distribution')}
@@ -186,9 +183,18 @@ function App() {
               >
                 Automation & Lost Reasons
               </button>
+              <button
+                onClick={() => setActiveTab('stats')}
+                className={`px-5 py-2.5 rounded-lg font-medium transition-all text-sm ${
+                  activeTab === 'stats'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Stats
+              </button>
             </div>
 
-            {/* Date Filter */}
             <div className="mt-4 md:mt-0">
               <div className="flex items-center space-x-3">
                 <span className="text-sm font-medium text-gray-700">Date Filter:</span>
@@ -229,7 +235,6 @@ function App() {
         </div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         {metrics.length === 0 ? (
           <div className="text-center py-12">
@@ -239,11 +244,11 @@ function App() {
           <>
             {activeTab === 'distribution' && <Tab1Distribution metrics={metrics} />}
             {activeTab === 'automation' && <Tab2Automation metrics={metrics} />}
+            {activeTab === 'stats' && <TabStats metrics={metrics} />}
           </>
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-white mt-12 border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <p className="text-center text-gray-500 text-sm">

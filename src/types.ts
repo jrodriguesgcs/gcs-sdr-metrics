@@ -74,4 +74,10 @@ export interface SDRMetrics {
     tagToDelete: number;
     ineligible: number;
   };
+  stats: {
+    distributedToSales: number;
+    sentToAutomation: number;
+    mqlLost: number;
+    toAddress: number;
+  };
 }

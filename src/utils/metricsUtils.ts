@@ -44,6 +44,12 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       tagToDelete: 0,
       ineligible: 0,
     },
+    stats: {
+      distributedToSales: 0,
+      sentToAutomation: 0,
+      mqlLost: 0,
+      toAddress: 0,
+    },
   };
 
   const ruffaMetrics: SDRMetrics = {
@@ -68,6 +74,12 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       tagToDelete: 0,
       ineligible: 0,
     },
+    stats: {
+      distributedToSales: 0,
+      sentToAutomation: 0,
+      mqlLost: 0,
+      toAddress: 0,
+    },
   };
 
   // First pass: Count total deals per agent with ANY activity in the date range
@@ -79,11 +91,8 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       return;
     }
 
-    // Check if deal has ANY activity in the date range:
-    // - Created in range, OR
-    // - Distributed in range, OR  
-    // - Lost in range
-    const hasActivity = 
+    // Check if deal has ANY activity in the date range
+    const hasActivity =
       isDateInRange(deal.createdDate, start, end) ||
       (customFields.distributionTime && isDateInRange(customFields.distributionTime, start, end)) ||
       (customFields.lostDateTime && isDateInRange(customFields.lostDateTime, start, end));
@@ -107,6 +116,43 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     }
 
     const metrics = sdrAgent === 'Ana Pascoal' ? anaMetrics : ruffaMetrics;
+
+    // STATS: Distributed to Sales
+    if (
+      customFields.distributionTime &&
+      isDateInRange(customFields.distributionTime, start, end) &&
+      !customFields.sendToAutomation
+    ) {
+      metrics.stats.distributedToSales++;
+    }
+
+    // STATS: Sent to Automation
+    if (
+      customFields.sendToAutomation &&
+      isDateInRange(deal.createdDate, start, end)
+    ) {
+      metrics.stats.sentToAutomation++;
+    }
+
+    // STATS: MQL Lost
+    if (
+      customFields.mqlLostReason &&
+      customFields.lostDateTime &&
+      isDateInRange(customFields.lostDateTime, start, end)
+    ) {
+      metrics.stats.mqlLost++;
+    }
+
+    // STATS: To Address
+    if (
+      customFields.dealCreationDateTime &&
+      isDateInRange(customFields.dealCreationDateTime, start, end) &&
+      !customFields.distributionTime &&
+      !customFields.lostDateTime &&
+      !customFields.sendToAutomation
+    ) {
+      metrics.stats.toAddress++;
+    }
 
     // Distribution metrics - only if sendToAutomation is blank AND partner is blank
     if (
