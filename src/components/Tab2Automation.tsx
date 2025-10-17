@@ -14,6 +14,7 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
       auto.portugalTax +
       auto.portugalLegal +
       auto.goldcrest +
+      auto.unresponsive +
       auto.serviceNotAvailable +
       auto.futureOpportunity +
       auto.ineligible +
@@ -94,6 +95,19 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.goldcrest}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
                   {calculatePercentage(auto.goldcrest, totalAgentDeals)}
+                </td>
+              </tr>
+
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Unresponsive Automation</div>
+                    <div className="text-sm text-gray-500">Unresponsive/Unqualified</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.unresponsive}</td>
+                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
+                  {calculatePercentage(auto.unresponsive, totalAgentDeals)}
                 </td>
               </tr>
 

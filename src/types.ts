@@ -69,6 +69,7 @@ export interface SDRMetrics {
     portugalTax: number;
     portugalLegal: number;
     goldcrest: number;
+    unresponsive: number;
     serviceNotAvailable: number;
     futureOpportunity: number;
     ineligible: number;
