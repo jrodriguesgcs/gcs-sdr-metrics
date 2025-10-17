@@ -34,15 +34,14 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       rafaelaBarbosaItalyCBD: 0,
     },
     automationMetrics: {
-      noInterest: 0,
       portugalD7: 0,
       portugalTax: 0,
       portugalLegal: 0,
+      goldcrest: 0,
       serviceNotAvailable: 0,
       futureOpportunity: 0,
-      unresponsiveUnqualified: 0,
-      tagToDelete: 0,
       ineligible: 0,
+      tagToDelete: 0,
     },
     stats: {
       distributedToSales: 0,
@@ -64,15 +63,14 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       rafaelaBarbosaItalyCBD: 0,
     },
     automationMetrics: {
-      noInterest: 0,
       portugalD7: 0,
       portugalTax: 0,
       portugalLegal: 0,
+      goldcrest: 0,
       serviceNotAvailable: 0,
       futureOpportunity: 0,
-      unresponsiveUnqualified: 0,
-      tagToDelete: 0,
       ineligible: 0,
+      tagToDelete: 0,
     },
     stats: {
       distributedToSales: 0,
@@ -207,14 +205,14 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       customFields.sendToAutomation
     ) {
       const automation = customFields.sendToAutomation.trim();
-      if (automation === 'Interest not Identified') {
-        metrics.automationMetrics.noInterest++;
-      } else if (automation === 'Paid Consultation Portugal D7') {
+      if (automation === 'Paid Consultation Portugal D7') {
         metrics.automationMetrics.portugalD7++;
       } else if (automation === 'Paid Consultation Portugal Taxes') {
         metrics.automationMetrics.portugalTax++;
       } else if (automation === 'Paid Consultation Portugal Legal') {
         metrics.automationMetrics.portugalLegal++;
+      } else if (automation === 'Send to Goldcrest') {
+        metrics.automationMetrics.goldcrest++;
       }
     }
 
@@ -226,12 +224,10 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
         metrics.automationMetrics.serviceNotAvailable++;
       } else if (lostReason === 'Future Opportunities') {
         metrics.automationMetrics.futureOpportunity++;
-      } else if (lostReason === 'Unqualified') {
-        metrics.automationMetrics.unresponsiveUnqualified++;
-      } else if (lostReason === 'Tag to Delete') {
-        metrics.automationMetrics.tagToDelete++;
       } else if (lostReason === "Can't Afford/Ineligible") {
         metrics.automationMetrics.ineligible++;
+      } else if (lostReason === 'Tag to Delete') {
+        metrics.automationMetrics.tagToDelete++;
       }
     }
   });

@@ -65,15 +65,14 @@ export interface SDRMetrics {
     rafaelaBarbosaItalyCBD: number;
   };
   automationMetrics: {
-    noInterest: number;
     portugalD7: number;
     portugalTax: number;
     portugalLegal: number;
+    goldcrest: number;
     serviceNotAvailable: number;
     futureOpportunity: number;
-    unresponsiveUnqualified: number;
-    tagToDelete: number;
     ineligible: number;
+    tagToDelete: number;
   };
   stats: {
     distributedToSales: number;

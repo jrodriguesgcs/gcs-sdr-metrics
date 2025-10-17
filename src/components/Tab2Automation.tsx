@@ -10,15 +10,14 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
 
   const getTotalAutomation = (auto: SDRMetrics['automationMetrics']) => {
     return (
-      auto.noInterest +
       auto.portugalD7 +
       auto.portugalTax +
       auto.portugalLegal +
+      auto.goldcrest +
       auto.serviceNotAvailable +
       auto.futureOpportunity +
-      auto.unresponsiveUnqualified +
-      auto.tagToDelete +
-      auto.ineligible
+      auto.ineligible +
+      auto.tagToDelete
     );
   };
 
@@ -46,19 +45,6 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">No Interest Automation</div>
-                    <div className="text-sm text-gray-500">Interest not Identified</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.noInterest}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.noInterest, totalAgentDeals)}
-                </td>
-              </tr>
-
               <tr className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
@@ -98,6 +84,19 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 </td>
               </tr>
 
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Goldcrest Automation</div>
+                    <div className="text-sm text-gray-500">Send to Goldcrest</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.goldcrest}</td>
+                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
+                  {calculatePercentage(auto.goldcrest, totalAgentDeals)}
+                </td>
+              </tr>
+
               <tr className="hover:bg-red-50 bg-red-50/30 transition-colors">
                 <td className="px-6 py-4">
                   <div>
@@ -127,13 +126,13 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
               <tr className="hover:bg-red-50 bg-red-50/30 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Unresponsive / Unqualified</div>
-                    <div className="text-sm text-gray-500">Lost - Unqualified</div>
+                    <div className="text-sm font-medium text-gray-900">Ineligible</div>
+                    <div className="text-sm text-gray-500">Lost - Can't Afford/Ineligible</div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.unresponsiveUnqualified}</td>
+                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.ineligible}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.unresponsiveUnqualified, totalAgentDeals)}
+                  {calculatePercentage(auto.ineligible, totalAgentDeals)}
                 </td>
               </tr>
 
@@ -147,19 +146,6 @@ export default function Tab2Automation({ metrics }: Tab2Props) {
                 <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.tagToDelete}</td>
                 <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
                   {calculatePercentage(auto.tagToDelete, totalAgentDeals)}
-                </td>
-              </tr>
-
-              <tr className="hover:bg-red-50 bg-red-50/30 transition-colors">
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Ineligible</div>
-                    <div className="text-sm text-gray-500">Lost - Can't Afford/Ineligible</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{auto.ineligible}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(auto.ineligible, totalAgentDeals)}
                 </td>
               </tr>
 
