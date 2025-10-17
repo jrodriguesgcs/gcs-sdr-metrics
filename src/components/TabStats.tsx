@@ -89,21 +89,6 @@ export default function TabStats({ metrics }: TabStatsProps) {
                 </td>
               </tr>
 
-              <tr className="hover:bg-yellow-50 transition-colors bg-yellow-50/30">
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">Deals to Address</div>
-                    <div className="text-sm text-gray-500">Number of deals to be addressed</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
-                  {stats.toAddress}
-                </td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {calculatePercentage(stats.toAddress, totalAgentDeals)}
-                </td>
-              </tr>
-
               <tr className="bg-blue-50 font-bold border-t-2 border-blue-200">
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">Total Agent Deals</div>

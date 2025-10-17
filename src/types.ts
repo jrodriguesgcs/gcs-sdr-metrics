@@ -37,7 +37,7 @@ export interface LoadingProgress {
   percentage: number;
 }
 
-export type DateFilter = 'today' | 'yesterday';
+export type DateFilter = 'today' | 'yesterday' | 'weekly';
 
 export interface SDRMetrics {
   sdrAgent: string;
@@ -80,6 +80,5 @@ export interface SDRMetrics {
     sentToAutomation: number;
     sentToPartners: number;
     mqlLost: number;
-    toAddress: number;
   };
 }

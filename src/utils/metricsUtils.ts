@@ -49,7 +49,6 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       sentToAutomation: 0,
       sentToPartners: 0,
       mqlLost: 0,
-      toAddress: 0,
     },
   };
 
@@ -80,7 +79,6 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       sentToAutomation: 0,
       sentToPartners: 0,
       mqlLost: 0,
-      toAddress: 0,
     },
   };
 
@@ -134,18 +132,6 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       isDateInRange(customFields.lostDateTime, start, end)
     ) {
       metrics.stats.mqlLost++;
-    }
-
-    // STATS: To Address
-    // Created in range, no Distribution/Lost/Send to Automation
-    if (
-      customFields.dealCreationDateTime &&
-      isDateInRange(customFields.dealCreationDateTime, start, end) &&
-      !customFields.distributionTime &&
-      !customFields.lostDateTime &&
-      !customFields.sendToAutomation
-    ) {
-      metrics.stats.toAddress++;
     }
 
     // Distribution metrics - only if sendToAutomation is blank AND partner is blank
@@ -250,20 +236,18 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
     }
   });
 
-  // Calculate Total Agent Deals as sum of all stats categories
+  // Calculate Total Agent Deals as sum of all stats categories (excluding toAddress)
   anaMetrics.totalAgentDeals =
     anaMetrics.stats.distributedToSales +
     anaMetrics.stats.sentToAutomation +
     anaMetrics.stats.sentToPartners +
-    anaMetrics.stats.mqlLost +
-    anaMetrics.stats.toAddress;
+    anaMetrics.stats.mqlLost;
 
   ruffaMetrics.totalAgentDeals =
     ruffaMetrics.stats.distributedToSales +
     ruffaMetrics.stats.sentToAutomation +
     ruffaMetrics.stats.sentToPartners +
-    ruffaMetrics.stats.mqlLost +
-    ruffaMetrics.stats.toAddress;
+    ruffaMetrics.stats.mqlLost;
 
   return [anaMetrics, ruffaMetrics];
 }

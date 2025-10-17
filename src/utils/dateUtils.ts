@@ -1,6 +1,6 @@
 import { format, startOfDay, endOfDay, subDays } from 'date-fns';
 
-export function getDateRange(filter: 'today' | 'yesterday'): { start: Date; end: Date } {
+export function getDateRange(filter: 'today' | 'yesterday' | 'weekly'): { start: Date; end: Date } {
   const now = new Date();
   
   if (filter === 'today') {
@@ -8,11 +8,18 @@ export function getDateRange(filter: 'today' | 'yesterday'): { start: Date; end:
       start: startOfDay(now),
       end: endOfDay(now),
     };
-  } else {
+  } else if (filter === 'yesterday') {
     const yesterday = subDays(now, 1);
     return {
       start: startOfDay(yesterday),
       end: endOfDay(yesterday),
+    };
+  } else {
+    // weekly: today + previous 6 days = 7 days total
+    const sixDaysAgo = subDays(now, 6);
+    return {
+      start: startOfDay(sixDaysAgo),
+      end: endOfDay(now),
     };
   }
 }

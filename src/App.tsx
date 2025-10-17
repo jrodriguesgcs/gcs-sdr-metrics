@@ -20,9 +20,11 @@ function App() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('today');
   const [deals, setDeals] = useState<Deal[]>([]);
   const [yesterdayDeals, setYesterdayDeals] = useState<Deal[]>([]);
+  const [weeklyDeals, setWeeklyDeals] = useState<Deal[]>([]);
   const [metrics, setMetrics] = useState<SDRMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isYesterdayLoading, setIsYesterdayLoading] = useState(false);
+  const [isWeeklyLoading, setIsWeeklyLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState<LoadingProgressType>({
     phase: 'idle',
     message: '',
@@ -65,9 +67,10 @@ function App() {
       setMetrics(todayMetrics);
 
       setRefreshStatus('success');
-      setRefreshMessage('All deals from today and yesterday have been loaded');
+      setRefreshMessage('All deals from today, yesterday, and the last 7 days have been loaded');
 
       loadYesterdayDataInBackground();
+      loadWeeklyDataInBackground();
     } catch (error) {
       console.error('Error loading today data:', error);
       alert('Failed to load data. Please check your API configuration.');
@@ -88,6 +91,18 @@ function App() {
     }
   };
 
+  const loadWeeklyDataInBackground = async () => {
+    setIsWeeklyLoading(true);
+    try {
+      const { deals: weeklyData } = await fetchAllDealsWithCustomFields(() => {});
+      setWeeklyDeals(weeklyData);
+    } catch (error) {
+      console.error('Error loading weekly data:', error);
+    } finally {
+      setIsWeeklyLoading(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshStatus('loading');
     setRefreshMessage('Refreshing data...');
@@ -99,14 +114,18 @@ function App() {
         setDeals(refreshedDeals);
         const newMetrics = calculateMetrics(refreshedDeals, 'today');
         setMetrics(newMetrics);
-      } else {
+      } else if (dateFilter === 'yesterday') {
         setYesterdayDeals(refreshedDeals);
         const newMetrics = calculateMetrics(refreshedDeals, 'yesterday');
+        setMetrics(newMetrics);
+      } else if (dateFilter === 'weekly') {
+        setWeeklyDeals(refreshedDeals);
+        const newMetrics = calculateMetrics(refreshedDeals, 'weekly');
         setMetrics(newMetrics);
       }
 
       setRefreshStatus('success');
-      setRefreshMessage('All deals from today and yesterday have been loaded');
+      setRefreshMessage('All deals from today, yesterday, and the last 7 days have been loaded');
     } catch (error) {
       console.error('Error refreshing data:', error);
       setRefreshStatus('error');
@@ -116,7 +135,16 @@ function App() {
 
   const handleDateFilterChange = (filter: DateFilter) => {
     setDateFilter(filter);
-    const currentDeals = filter === 'today' ? deals : yesterdayDeals;
+    let currentDeals: Deal[];
+    
+    if (filter === 'today') {
+      currentDeals = deals;
+    } else if (filter === 'yesterday') {
+      currentDeals = yesterdayDeals;
+    } else {
+      currentDeals = weeklyDeals;
+    }
+    
     const newMetrics = calculateMetrics(currentDeals, filter);
     setMetrics(newMetrics);
   };
@@ -226,6 +254,24 @@ function App() {
                       </span>
                     )}
                     <span className={isYesterdayLoading ? 'invisible' : ''}>Yesterday</span>
+                  </button>
+                  <button
+                    onClick={() => handleDateFilterChange('weekly')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all text-sm relative ${
+                      dateFilter === 'weekly'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : isWeeklyLoading
+                        ? 'bg-gray-100 text-gray-400 cursor-wait'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    disabled={isWeeklyLoading}
+                  >
+                    {isWeeklyLoading && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></span>
+                      </span>
+                    )}
+                    <span className={isWeeklyLoading ? 'invisible' : ''}>Last 7 Days</span>
                   </button>
                 </div>
                 <span className="text-sm text-gray-500">({formatDate(start)})</span>
