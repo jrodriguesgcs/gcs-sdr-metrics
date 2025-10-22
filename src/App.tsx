@@ -5,6 +5,7 @@ import RefreshNotification from './components/RefreshNotification';
 import Tab1Distribution from './components/Tab1Distribution';
 import Tab2Automation from './components/Tab2Automation';
 import TabStats from './components/TabStats';
+import TabPhoneCalls from './components/TabPhoneCalls';
 import { Deal, DateFilter, SDRMetrics, LoadingProgress as LoadingProgressType } from './types';
 import { fetchAllDealsWithCustomFields } from './services/api';
 import { calculateMetrics } from './utils/metricsUtils';
@@ -12,7 +13,7 @@ import { formatDate, getDateRange } from './utils/dateUtils';
 
 const APP_PASSWORD = 'Welcome-GCS-Dashboard-2025';
 
-type TabType = 'distribution' | 'automation' | 'stats';
+type TabType = 'distribution' | 'automation' | 'stats' | 'phonecalls';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -221,6 +222,16 @@ function App() {
               >
                 Stats
               </button>
+              <button
+                onClick={() => setActiveTab('phonecalls')}
+                className={`px-5 py-2.5 rounded-lg font-medium transition-all text-sm ${
+                  activeTab === 'phonecalls'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Phone Calls
+              </button>
             </div>
 
             <div className="mt-4 md:mt-0">
@@ -282,7 +293,7 @@ function App() {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {metrics.length === 0 ? (
+        {metrics.length === 0 && activeTab !== 'phonecalls' ? (
           <div className="text-center py-12">
             <p className="text-gray-500">Loading metrics...</p>
           </div>
@@ -297,6 +308,7 @@ function App() {
                 deals={dateFilter === 'weekly' ? weeklyDeals : dateFilter === 'yesterday' ? yesterdayDeals : deals}
               />
             )}
+            {activeTab === 'phonecalls' && <TabPhoneCalls dateFilter={dateFilter} />}
           </>
         )}
       </main>
