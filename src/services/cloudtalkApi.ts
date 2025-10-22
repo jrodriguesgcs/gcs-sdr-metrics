@@ -1,15 +1,17 @@
 interface CloudTalkCall {
   id: string;
-  direction: 'incoming' | 'outgoing';
-  status: 'answered' | 'missed';
-  start: string;
-  duration: number;
-  user_id: number;
+  type: 'incoming' | 'outgoing';
+  billsec: string;
+  talking_time: string;
+  started_at: string;
+  answered_at: string | null;
+  user_id: string;
 }
 
-interface CloudTalkUser {
-  id: number;
-  name: string;
+interface CloudTalkAgent {
+  id: string;
+  firstname: string;
+  lastname: string;
   extension: string;
 }
 
@@ -26,34 +28,48 @@ async function fetchFromCloudTalkProxy(endpoint: string): Promise<any> {
   return response.json();
 }
 
-export async function getGCSOperatorUserId(): Promise<number | null> {
+export async function getGCSOperatorUserId(): Promise<string | null> {
   try {
-    const data = await fetchFromCloudTalkProxy('/users.json');
+    const data = await fetchFromCloudTalkProxy('/agents/index.json');
     
-    if (data.users) {
-      const gcsOperator = data.users.find((user: CloudTalkUser) => 
-        user.extension === '1001' || user.name.includes('GCS Operator')
+    if (data.responseData && data.responseData.data) {
+      const gcsOperator = data.responseData.data.find((item: any) => 
+        item.Agent.extension === '1001' || 
+        (item.Agent.firstname + ' ' + item.Agent.lastname).includes('GCS Operator')
       );
-      return gcsOperator ? gcsOperator.id : null;
+      return gcsOperator ? gcsOperator.Agent.id : null;
     }
     
     return null;
   } catch (error) {
-    console.error('Error fetching CloudTalk users:', error);
+    console.error('Error fetching CloudTalk agents:', error);
     return null;
   }
 }
 
 export async function fetchCloudTalkCalls(
-  userId: number,
+  userId: string,
   dateFrom: string,
   dateTo: string
 ): Promise<CloudTalkCall[]> {
   try {
-    const endpoint = `/calls/index.json?user_id=${userId}&date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
+    // Fetch up to 1000 calls, newest first
+    const endpoint = `/calls/index.json?user_id=${userId}&date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}&limit=1000&sort=started_at&order=desc`;
     const data = await fetchFromCloudTalkProxy(endpoint);
     
-    return data.calls || [];
+    if (data.responseData && data.responseData.data) {
+      return data.responseData.data.map((item: any) => ({
+        id: item.Cdr.id,
+        type: item.Cdr.type,
+        billsec: item.Cdr.billsec,
+        talking_time: item.Cdr.talking_time,
+        started_at: item.Cdr.started_at,
+        answered_at: item.Cdr.answered_at,
+        user_id: item.Cdr.user_id,
+      }));
+    }
+    
+    return [];
   } catch (error) {
     console.error('Error fetching CloudTalk calls:', error);
     return [];

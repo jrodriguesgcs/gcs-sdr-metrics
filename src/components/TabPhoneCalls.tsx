@@ -75,18 +75,20 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     };
 
     filteredCalls.forEach(call => {
-      if (call.direction === 'incoming') {
+      const isAnswered = call.answered_at !== null && call.answered_at !== '';
+      
+      if (call.type === 'incoming') {
         metrics.incomingTotal++;
-        if (call.status === 'answered') {
+        if (isAnswered) {
           metrics.incomingAnswered++;
-        } else if (call.status === 'missed') {
+        } else {
           metrics.incomingMissed++;
         }
-      } else if (call.direction === 'outgoing') {
+      } else if (call.type === 'outgoing') {
         metrics.outgoingTotal++;
-        if (call.status === 'answered') {
+        if (isAnswered) {
           metrics.outgoingAnswered++;
-        } else if (call.status === 'missed') {
+        } else {
           metrics.outgoingMissed++;
         }
       }
@@ -117,24 +119,25 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
 
     // Filter calls by time and aggregate by day
     calls.forEach(call => {
-      const matchesTimeFilter = isAnaHours ? isAnasHours(call.start) : !isAnasHours(call.start);
+      const matchesTimeFilter = isAnaHours ? isAnasHours(call.started_at) : !isAnasHours(call.started_at);
       if (!matchesTimeFilter) return;
 
-      const callDate = toZonedTime(parseISO(call.start), LISBON_TZ);
+      const callDate = toZonedTime(parseISO(call.started_at), LISBON_TZ);
+      const isAnswered = call.answered_at !== null && call.answered_at !== '';
       
       dailyMetrics.forEach(dayStat => {
         const dayStart = startOfDay(dayStat.date);
         const dayEnd = endOfDay(dayStat.date);
         
         if (isWithinInterval(callDate, { start: dayStart, end: dayEnd })) {
-          if (call.direction === 'incoming') {
+          if (call.type === 'incoming') {
             dayStat.incomingTotal++;
-            if (call.status === 'answered') dayStat.incomingAnswered++;
-            if (call.status === 'missed') dayStat.incomingMissed++;
-          } else if (call.direction === 'outgoing') {
+            if (isAnswered) dayStat.incomingAnswered++;
+            else dayStat.incomingMissed++;
+          } else if (call.type === 'outgoing') {
             dayStat.outgoingTotal++;
-            if (call.status === 'answered') dayStat.outgoingAnswered++;
-            if (call.status === 'missed') dayStat.outgoingMissed++;
+            if (isAnswered) dayStat.outgoingAnswered++;
+            else dayStat.outgoingMissed++;
           }
           dayStat.grandTotal++;
         }
@@ -147,7 +150,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
   const renderWeeklyTable = (title: string, isAnaHours: boolean) => {
     const dailyMetrics = calculateDailyMetrics(isAnaHours);
     const totalMetrics = calculateMetrics(
-      calls.filter(call => isAnaHours ? isAnasHours(call.start) : !isAnasHours(call.start))
+      calls.filter(call => isAnaHours ? isAnasHours(call.started_at) : !isAnasHours(call.started_at))
     );
 
     return (
@@ -297,7 +300,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
 
   const renderSimpleTable = (title: string, isAnaHours: boolean) => {
     const metrics = calculateMetrics(
-      calls.filter(call => isAnaHours ? isAnasHours(call.start) : !isAnasHours(call.start))
+      calls.filter(call => isAnaHours ? isAnasHours(call.started_at) : !isAnasHours(call.started_at))
     );
 
     return (

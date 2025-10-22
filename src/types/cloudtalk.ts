@@ -1,10 +1,11 @@
 export interface CloudTalkCall {
   id: string;
-  direction: 'incoming' | 'outgoing';
-  status: 'answered' | 'missed';
-  start: string;
-  duration: number;
-  user_id: number;
+  type: 'incoming' | 'outgoing';
+  billsec: string;
+  talking_time: string;
+  started_at: string;
+  answered_at: string | null;
+  user_id: string;
 }
 
 export interface CallMetrics {
