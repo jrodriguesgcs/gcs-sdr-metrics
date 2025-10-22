@@ -2,7 +2,7 @@ interface CloudTalkCall {
   id: string;
   direction: 'incoming' | 'outgoing';
   status: 'answered' | 'missed';
-  start: string; // datetime
+  start: string;
   duration: number;
   user_id: number;
 }
@@ -13,17 +13,11 @@ interface CloudTalkUser {
   extension: string;
 }
 
-const CLOUDTALK_API_BASE = 'https://my.cloudtalk.io/api';
+const CLOUDTALK_PROXY = '/api/cloudtalk-proxy';
 
-async function fetchFromCloudTalk(endpoint: string, apiKey: string): Promise<any> {
-  const url = `${CLOUDTALK_API_BASE}${endpoint}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-  });
+async function fetchFromCloudTalkProxy(endpoint: string): Promise<any> {
+  const url = `${CLOUDTALK_PROXY}?endpoint=${encodeURIComponent(endpoint)}`;
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`CloudTalk API Error: ${response.statusText}`);
@@ -32,9 +26,9 @@ async function fetchFromCloudTalk(endpoint: string, apiKey: string): Promise<any
   return response.json();
 }
 
-export async function getGCSOperatorUserId(apiKey: string): Promise<number | null> {
+export async function getGCSOperatorUserId(): Promise<number | null> {
   try {
-    const data = await fetchFromCloudTalk('/users.json', apiKey);
+    const data = await fetchFromCloudTalkProxy('/users.json');
     
     if (data.users) {
       const gcsOperator = data.users.find((user: CloudTalkUser) => 
@@ -51,14 +45,13 @@ export async function getGCSOperatorUserId(apiKey: string): Promise<number | nul
 }
 
 export async function fetchCloudTalkCalls(
-  apiKey: string,
   userId: number,
   dateFrom: string,
   dateTo: string
 ): Promise<CloudTalkCall[]> {
   try {
     const endpoint = `/calls/index.json?user_id=${userId}&date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`;
-    const data = await fetchFromCloudTalk(endpoint, apiKey);
+    const data = await fetchFromCloudTalkProxy(endpoint);
     
     return data.calls || [];
   } catch (error) {

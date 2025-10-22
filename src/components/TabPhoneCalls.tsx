@@ -26,13 +26,8 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     setError(null);
 
     try {
-      const apiKey = import.meta.env.VITE_CLOUDTALK_API_KEY;
-      if (!apiKey) {
-        throw new Error('CloudTalk API key not configured');
-      }
-
-      // Get GCS Operator user ID
-      const userId = await getGCSOperatorUserId(apiKey);
+      // Get GCS Operator user ID (no API key needed - proxy handles it)
+      const userId = await getGCSOperatorUserId();
       if (!userId) {
         throw new Error('GCS Operator user not found');
       }
@@ -44,8 +39,8 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       const dateFrom = format(fromZonedTime(start, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
       const dateTo = format(fromZonedTime(end, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
 
-      // Fetch calls
-      const fetchedCalls = await fetchCloudTalkCalls(apiKey, userId, dateFrom, dateTo);
+      // Fetch calls (no API key needed - proxy handles it)
+      const fetchedCalls = await fetchCloudTalkCalls(userId, dateFrom, dateTo);
       setCalls(fetchedCalls);
     } catch (err) {
       console.error('Error loading calls:', err);
