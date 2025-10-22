@@ -10,10 +10,11 @@ const cloudtalkHandler = async (req: any, res: any) => {
   }
 
   const { endpoint } = req.query;
+  const CLOUDTALK_API_ID = process.env.CLOUDTALK_API_ID;
   const CLOUDTALK_API_KEY = process.env.CLOUDTALK_API_KEY;
 
-  if (!CLOUDTALK_API_KEY) {
-    return res.status(500).json({ error: 'CloudTalk API key not configured' });
+  if (!CLOUDTALK_API_ID || !CLOUDTALK_API_KEY) {
+    return res.status(500).json({ error: 'CloudTalk API credentials not configured' });
   }
 
   if (!endpoint || typeof endpoint !== 'string') {
@@ -23,10 +24,13 @@ const cloudtalkHandler = async (req: any, res: any) => {
   try {
     const url = `https://my.cloudtalk.io/api${endpoint}`;
     
+    // Create Basic Auth token (ID:Key in base64)
+    const basicAuth = Buffer.from(`${CLOUDTALK_API_ID}:${CLOUDTALK_API_KEY}`).toString('base64');
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${CLOUDTALK_API_KEY}`,
+        'Authorization': `Basic ${basicAuth}`,
         'Content-Type': 'application/json',
       },
     });
