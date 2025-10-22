@@ -290,7 +290,13 @@ function App() {
           <>
             {activeTab === 'distribution' && <Tab1Distribution metrics={metrics} />}
             {activeTab === 'automation' && <Tab2Automation metrics={metrics} />}
-            {activeTab === 'stats' && <TabStats metrics={metrics} />}
+            {activeTab === 'stats' && (
+              <TabStats 
+                metrics={metrics} 
+                dateFilter={dateFilter}
+                deals={dateFilter === 'weekly' ? weeklyDeals : dateFilter === 'yesterday' ? yesterdayDeals : deals}
+              />
+            )}
           </>
         )}
       </main>
