@@ -3,7 +3,7 @@ import { DateFilter } from '../types';
 import { CallMetrics, DailyCallMetrics, CloudTalkCall } from '../types/cloudtalk';
 import { fetchCloudTalkCalls, getGCSOperatorUserId } from '../services/cloudtalkApi';
 import { format, subDays, startOfDay, endOfDay, parseISO, isWithinInterval } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { getDateRange } from '../utils/dateUtils';
 
 interface TabPhoneCallsProps {
@@ -41,8 +41,8 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       const { start, end } = getDateRange(dateFilter);
       
       // Format dates for CloudTalk API (Lisbon timezone)
-      const dateFrom = format(zonedTimeToUtc(start, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
-      const dateTo = format(zonedTimeToUtc(end, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
+      const dateFrom = format(fromZonedTime(start, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
+      const dateTo = format(fromZonedTime(end, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
 
       // Fetch calls
       const fetchedCalls = await fetchCloudTalkCalls(apiKey, userId, dateFrom, dateTo);
@@ -56,7 +56,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
   };
 
   const isAnasHours = (callStart: string): boolean => {
-    const callDate = utcToZonedTime(parseISO(callStart), LISBON_TZ);
+    const callDate = toZonedTime(parseISO(callStart), LISBON_TZ);
     const hour = callDate.getHours();
     const minute = callDate.getMinutes();
     
@@ -125,7 +125,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       const matchesTimeFilter = isAnaHours ? isAnasHours(call.start) : !isAnasHours(call.start);
       if (!matchesTimeFilter) return;
 
-      const callDate = utcToZonedTime(parseISO(call.start), LISBON_TZ);
+      const callDate = toZonedTime(parseISO(call.start), LISBON_TZ);
       
       dailyMetrics.forEach(dayStat => {
         const dayStart = startOfDay(dayStat.date);
