@@ -8,13 +8,6 @@ interface CloudTalkCall {
   user_id: string;
 }
 
-interface CloudTalkAgent {
-  id: string;
-  firstname: string;
-  lastname: string;
-  extension: string;
-}
-
 const CLOUDTALK_PROXY = '/api/cloudtalk-proxy';
 
 async function fetchFromCloudTalkProxy(endpoint: string): Promise<any> {
