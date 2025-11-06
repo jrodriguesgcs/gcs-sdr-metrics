@@ -75,7 +75,11 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     };
 
     filteredCalls.forEach(call => {
-      const isAnswered = call.answered_at !== null && call.answered_at !== '';
+      // A call is truly answered if answered_at exists AND there was actual talk time
+      const isAnswered = call.answered_at !== null && 
+                         call.answered_at !== '' && 
+                         (parseInt(call.billsec || '0') > 0 || 
+                          parseInt(call.talking_time || '0') > 0);
       
       if (call.type === 'incoming') {
         metrics.incomingTotal++;
@@ -123,7 +127,11 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       if (!matchesTimeFilter) return;
 
       const callDate = toZonedTime(parseISO(call.started_at), LISBON_TZ);
-      const isAnswered = call.answered_at !== null && call.answered_at !== '';
+      // A call is truly answered if answered_at exists AND there was actual talk time
+      const isAnswered = call.answered_at !== null && 
+                         call.answered_at !== '' && 
+                         (parseInt(call.billsec || '0') > 0 || 
+                          parseInt(call.talking_time || '0') > 0);
       
       dailyMetrics.forEach(dayStat => {
         const dayStart = startOfDay(dayStat.date);
