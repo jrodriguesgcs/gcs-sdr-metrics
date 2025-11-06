@@ -39,6 +39,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       portugalLegal: 0,
       goldcrest: 0,
       unresponsive: 0,
+      interestNotIdentified: 0,
       serviceNotAvailable: 0,
       futureOpportunity: 0,
       ineligible: 0,
@@ -69,6 +70,7 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
       portugalLegal: 0,
       goldcrest: 0,
       unresponsive: 0,
+      interestNotIdentified: 0,
       serviceNotAvailable: 0,
       futureOpportunity: 0,
       ineligible: 0,
@@ -217,6 +219,8 @@ export function calculateMetrics(deals: Deal[], dateFilter: DateFilter): SDRMetr
         metrics.automationMetrics.goldcrest++;
       } else if (automation === 'Unresponsive/Unqualified') {
         metrics.automationMetrics.unresponsive++;
+      } else if (automation === 'Interest not Identified') {
+        metrics.automationMetrics.interestNotIdentified++;
       }
     }
 

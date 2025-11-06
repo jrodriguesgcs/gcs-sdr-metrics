@@ -70,6 +70,7 @@ export interface SDRMetrics {
     portugalLegal: number;
     goldcrest: number;
     unresponsive: number;
+    interestNotIdentified: number;
     serviceNotAvailable: number;
     futureOpportunity: number;
     ineligible: number;
