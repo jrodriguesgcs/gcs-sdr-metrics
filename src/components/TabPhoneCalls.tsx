@@ -55,10 +55,10 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     const hour = callDate.getHours();
     const minute = callDate.getMinutes();
     
-    // Between 10:00:00 and 18:30:00
-    if (hour > 10 && hour < 18) return true;
-    if (hour === 10 && minute >= 0) return true;
-    if (hour === 18 && minute <= 30) return true;
+    // Between 9:00:00 and 17:30:00
+    if (hour > 9 && hour < 17) return true;
+    if (hour === 9 && minute >= 0) return true;
+    if (hour === 17 && minute <= 30) return true;
     
     return false;
   };
@@ -420,12 +420,12 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       <div className="grid grid-cols-1 gap-6">
         {dateFilter === 'weekly' ? (
           <>
-            {renderWeeklyTable('Ana Pascoal (10:00 - 18:30)', true)}
+            {renderWeeklyTable('Ana Pascoal (9:00 - 17:30)', true)}
             {renderWeeklyTable('Ruffa Espejon (Other Hours)', false)}
           </>
         ) : (
           <>
-            {renderSimpleTable('Ana Pascoal (10:00 - 18:30)', true)}
+            {renderSimpleTable('Ana Pascoal (9:00 - 17:30)', true)}
             {renderSimpleTable('Ruffa Espejon (Other Hours)', false)}
           </>
         )}
