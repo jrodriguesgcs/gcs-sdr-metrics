@@ -75,22 +75,13 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     };
 
     filteredCalls.forEach(call => {
-      // Determine if call was truly answered by analyzing multiple factors
-      let isAnswered = false;
-      
-      const hasAnsweredAt = call.answered_at !== null && call.answered_at !== '';
       const billsec = parseInt(call.billsec || '0');
-      const talkingTime = parseInt(call.talking_time || '0');
+      
+      // A call is answered if billsec > 0 (actual conversation happened)
+      // A call is missed if billsec = 0 (no actual conversation, regardless of system activity)
+      const isAnswered = billsec > 0;
       
       if (call.type === 'incoming') {
-        // For incoming calls, we need to be more careful
-        // A call is answered only if:
-        // 1. answered_at exists AND
-        // 2. There's meaningful talk time (billsec > 0)
-        // Note: If talking_time is very short (< 10 seconds), it might just be voicemail/IVR
-        // But if billsec is 0, it definitely wasn't answered
-        isAnswered = hasAnsweredAt && billsec > 0;
-        
         metrics.incomingTotal++;
         if (isAnswered) {
           metrics.incomingAnswered++;
@@ -98,10 +89,6 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
           metrics.incomingMissed++;
         }
       } else if (call.type === 'outgoing') {
-        // For outgoing calls, standard logic works
-        // answered_at exists AND there was actual conversation time
-        isAnswered = hasAnsweredAt && (billsec > 0 || talkingTime > 0);
-        
         metrics.outgoingTotal++;
         if (isAnswered) {
           metrics.outgoingAnswered++;
@@ -140,21 +127,10 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       if (!matchesTimeFilter) return;
 
       const callDate = toZonedTime(parseISO(call.started_at), LISBON_TZ);
-      
-      // Determine if call was truly answered by analyzing multiple factors
-      let isAnswered = false;
-      
-      const hasAnsweredAt = call.answered_at !== null && call.answered_at !== '';
       const billsec = parseInt(call.billsec || '0');
-      const talkingTime = parseInt(call.talking_time || '0');
       
-      if (call.type === 'incoming') {
-        // For incoming calls, require billsec > 0 to consider it answered
-        isAnswered = hasAnsweredAt && billsec > 0;
-      } else if (call.type === 'outgoing') {
-        // For outgoing calls, standard logic works
-        isAnswered = hasAnsweredAt && (billsec > 0 || talkingTime > 0);
-      }
+      // A call is answered if billsec > 0 (actual conversation happened)
+      const isAnswered = billsec > 0;
       
       dailyMetrics.forEach(dayStat => {
         const dayStart = startOfDay(dayStat.date);
