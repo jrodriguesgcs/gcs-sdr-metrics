@@ -6,6 +6,7 @@ export interface CloudTalkCall {
   started_at: string;
   answered_at: string | null;
   user_id: string;
+  is_voicemail: boolean;
 }
 
 export interface CallMetrics {

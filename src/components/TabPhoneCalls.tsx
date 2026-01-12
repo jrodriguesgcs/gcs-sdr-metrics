@@ -84,6 +84,15 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     });
   };
 
+  // Determine if a call is answered based on billsec and is_voicemail
+  // - Answered: billsec > 0 AND NOT a voicemail
+  // - Missed: billsec = 0 OR is_voicemail = true
+  const isCallAnswered = (call: CloudTalkCall): boolean => {
+    const billsec = parseInt(call.billsec || '0');
+    // A call is answered if there was actual conversation time AND it's not a voicemail
+    return billsec > 0 && !call.is_voicemail;
+  };
+
   const calculateMetrics = (filteredCalls: CloudTalkCall[]): CallMetrics => {
     const metrics: CallMetrics = {
       incomingAnswered: 0,
@@ -96,8 +105,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     };
 
     filteredCalls.forEach(call => {
-      const billsec = parseInt(call.billsec || '0');
-      const isAnswered = billsec > 0;
+      const isAnswered = isCallAnswered(call);
 
       if (call.type === 'incoming') {
         if (isAnswered) {
@@ -116,8 +124,8 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       }
     });
 
-    // Grand total only counts answered calls (as per previous requirements)
-    metrics.grandTotal = metrics.incomingAnswered + metrics.outgoingAnswered;
+    // Grand total counts all calls (answered + missed)
+    metrics.grandTotal = metrics.incomingTotal + metrics.outgoingTotal;
 
     return metrics;
   };
@@ -147,8 +155,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       };
 
       dayCalls.forEach(call => {
-        const billsec = parseInt(call.billsec || '0');
-        const isAnswered = billsec > 0;
+        const isAnswered = isCallAnswered(call);
 
         if (call.type === 'incoming') {
           if (isAnswered) {
@@ -167,7 +174,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
         }
       });
 
-      dayMetrics.grandTotal = dayMetrics.incomingAnswered + dayMetrics.outgoingAnswered;
+      dayMetrics.grandTotal = dayMetrics.incomingTotal + dayMetrics.outgoingTotal;
 
       return dayMetrics;
     });
@@ -223,6 +230,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
+              {/* Incoming Answered */}
               <tr className="bg-green-50">
                 <td className="sticky left-0 bg-green-50 px-6 py-4 text-sm font-medium text-gray-900">Incoming - Answered</td>
                 {dailyMetrics.map((dm, idx) => (
@@ -231,6 +239,16 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900 bg-blue-50">{totalMetrics.incomingAnswered}</td>
               </tr>
 
+              {/* Incoming Missed */}
+              <tr className="bg-red-50">
+                <td className="sticky left-0 bg-red-50 px-6 py-4 text-sm font-medium text-gray-900">Incoming - Missed</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.incomingMissed}</td>
+                ))}
+                <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900 bg-blue-50">{totalMetrics.incomingMissed}</td>
+              </tr>
+
+              {/* Incoming Total */}
               <tr className="bg-green-100 font-semibold">
                 <td className="sticky left-0 bg-green-100 px-6 py-4 text-sm text-gray-900">Incoming Total</td>
                 {dailyMetrics.map((dm, idx) => (
@@ -239,6 +257,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 <td className="px-6 py-4 text-center text-sm font-bold text-gray-900 bg-blue-100">{totalMetrics.incomingTotal}</td>
               </tr>
 
+              {/* Outgoing Answered */}
               <tr className="bg-purple-50">
                 <td className="sticky left-0 bg-purple-50 px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Answered</td>
                 {dailyMetrics.map((dm, idx) => (
@@ -247,6 +266,16 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900 bg-blue-50">{totalMetrics.outgoingAnswered}</td>
               </tr>
 
+              {/* Outgoing Missed */}
+              <tr className="bg-orange-50">
+                <td className="sticky left-0 bg-orange-50 px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Missed</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.outgoingMissed}</td>
+                ))}
+                <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900 bg-blue-50">{totalMetrics.outgoingMissed}</td>
+              </tr>
+
+              {/* Outgoing Total */}
               <tr className="bg-purple-100 font-semibold">
                 <td className="sticky left-0 bg-purple-100 px-6 py-4 text-sm text-gray-900">Outgoing Total</td>
                 {dailyMetrics.map((dm, idx) => (
@@ -255,6 +284,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 <td className="px-6 py-4 text-center text-sm font-bold text-gray-900 bg-blue-100">{totalMetrics.outgoingTotal}</td>
               </tr>
 
+              {/* Grand Total */}
               <tr className="bg-blue-100 font-bold border-t-2 border-blue-300">
                 <td className="sticky left-0 bg-blue-100 px-6 py-4 text-sm text-gray-900">Grand Total</td>
                 {dailyMetrics.map((dm, idx) => (
@@ -289,6 +319,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
+              {/* Incoming Answered */}
               <tr className="bg-green-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">Incoming - Answered</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.incomingAnswered}</td>
@@ -297,6 +328,16 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 </td>
               </tr>
 
+              {/* Incoming Missed */}
+              <tr className="bg-red-50">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">Incoming - Missed</td>
+                <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.incomingMissed}</td>
+                <td className="px-6 py-4 text-right text-sm text-blue-700">
+                  {metrics.grandTotal > 0 ? ((metrics.incomingMissed / metrics.grandTotal) * 100).toFixed(1) : '0.0'}%
+                </td>
+              </tr>
+
+              {/* Incoming Total */}
               <tr className="bg-green-100 font-semibold">
                 <td className="px-6 py-4 text-sm text-gray-900">Incoming Total</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.incomingTotal}</td>
@@ -305,6 +346,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 </td>
               </tr>
 
+              {/* Outgoing Answered */}
               <tr className="bg-purple-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Answered</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.outgoingAnswered}</td>
@@ -313,6 +355,16 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 </td>
               </tr>
 
+              {/* Outgoing Missed */}
+              <tr className="bg-orange-50">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Missed</td>
+                <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.outgoingMissed}</td>
+                <td className="px-6 py-4 text-right text-sm text-blue-700">
+                  {metrics.grandTotal > 0 ? ((metrics.outgoingMissed / metrics.grandTotal) * 100).toFixed(1) : '0.0'}%
+                </td>
+              </tr>
+
+              {/* Outgoing Total */}
               <tr className="bg-purple-100 font-semibold">
                 <td className="px-6 py-4 text-sm text-gray-900">Outgoing Total</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.outgoingTotal}</td>
@@ -321,6 +373,7 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 </td>
               </tr>
 
+              {/* Grand Total */}
               <tr className="bg-blue-100 font-bold border-t-2 border-blue-300">
                 <td className="px-6 py-4 text-sm text-gray-900">Grand Total</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.grandTotal}</td>

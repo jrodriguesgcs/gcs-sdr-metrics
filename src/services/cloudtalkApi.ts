@@ -1,18 +1,16 @@
-interface CloudTalkCall {
-  id: string;
-  type: 'incoming' | 'outgoing';
-  billsec: string;
-  talking_time: string;
-  started_at: string;
-  answered_at: string | null;
-  user_id: string;
-}
+import { CloudTalkCall } from '../types/cloudtalk';
 
-const CLOUDTALK_PROXY = '/api/cloudtalk-proxy';
+const CLOUDTALK_PROXY_BASE = '/api/cloudtalk-proxy';
 
 async function fetchFromCloudTalkProxy(endpoint: string): Promise<any> {
-  const url = `${CLOUDTALK_PROXY}?endpoint=${encodeURIComponent(endpoint)}`;
-  const response = await fetch(url);
+  const url = `${CLOUDTALK_PROXY_BASE}?endpoint=${encodeURIComponent(endpoint)}`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`CloudTalk API Error: ${response.statusText}`);
@@ -26,10 +24,12 @@ export async function getGCSOperatorUserId(): Promise<string | null> {
     const data = await fetchFromCloudTalkProxy('/agents/index.json');
     
     if (data.responseData && data.responseData.data) {
+      // Find GCS Operator by extension 1001
       const gcsOperator = data.responseData.data.find((item: any) => 
         item.Agent.extension === '1001' || 
-        (item.Agent.firstname + ' ' + item.Agent.lastname).includes('GCS Operator')
+        item.Agent.name?.toLowerCase().includes('gcs operator')
       );
+      
       return gcsOperator ? gcsOperator.Agent.id : null;
     }
     
@@ -59,6 +59,7 @@ export async function fetchCloudTalkCalls(
         started_at: item.Cdr.started_at,
         answered_at: item.Cdr.answered_at,
         user_id: item.Cdr.user_id,
+        is_voicemail: item.Cdr.is_voicemail || false,
       }));
     }
     
