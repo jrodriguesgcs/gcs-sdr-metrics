@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { DateFilter } from '../types';
+import { DateFilter, PhoneCallsDateFilter } from '../types';
 import { CallMetrics, DailyCallMetrics, CloudTalkCall } from '../types/cloudtalk';
 import { fetchCloudTalkCalls, getGCSOperatorUserId } from '../services/cloudtalkApi';
-import { format, subDays, startOfDay, endOfDay, parseISO, isWithinInterval } from 'date-fns';
+import { format, startOfDay, endOfDay, parseISO, isWithinInterval, eachDayOfInterval } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { getDateRange } from '../utils/dateUtils';
+import { getDateRange, formatMonthYear } from '../utils/dateUtils';
 
 interface TabPhoneCallsProps {
   dateFilter: DateFilter;
@@ -12,14 +12,30 @@ interface TabPhoneCallsProps {
 
 const LISBON_TZ = 'Europe/Lisbon';
 
+// Ana's working hours (Lisbon timezone): 9:00 - 17:30
+const ANA_START_HOUR = 9;
+const ANA_START_MINUTE = 0;
+const ANA_END_HOUR = 17;
+const ANA_END_MINUTE = 30;
+
 export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
   const [calls, setCalls] = useState<CloudTalkCall[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Local date filter for Phone Calls tab only
+  const [phoneCallsFilter, setPhoneCallsFilter] = useState<PhoneCallsDateFilter>(dateFilter);
+
+  // Sync with parent dateFilter when it changes (only for today/yesterday/weekly)
+  useEffect(() => {
+    if (dateFilter === 'today' || dateFilter === 'yesterday' || dateFilter === 'weekly') {
+      setPhoneCallsFilter(dateFilter);
+    }
+  }, [dateFilter]);
 
   useEffect(() => {
     loadCalls();
-  }, [dateFilter]);
+  }, [phoneCallsFilter]);
 
   const loadCalls = async () => {
     setIsLoading(true);
@@ -32,8 +48,8 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
         throw new Error('GCS Operator user not found');
       }
 
-      // Get date range
-      const { start, end } = getDateRange(dateFilter);
+      // Get date range based on phoneCallsFilter
+      const { start, end } = getDateRange(phoneCallsFilter);
       
       // Format dates for CloudTalk API (Lisbon timezone)
       const dateFrom = format(fromZonedTime(start, LISBON_TZ), 'yyyy-MM-dd HH:mm:ss');
@@ -44,23 +60,28 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       setCalls(fetchedCalls);
     } catch (err) {
       console.error('Error loading calls:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load calls');
+      setError(err instanceof Error ? err.message : 'Failed to load phone calls');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isAnasHours = (callStart: string): boolean => {
-    const callDate = toZonedTime(parseISO(callStart), LISBON_TZ);
-    const hour = callDate.getHours();
-    const minute = callDate.getMinutes();
+  const isWithinAnaHours = (dateString: string): boolean => {
+    const date = toZonedTime(parseISO(dateString), LISBON_TZ);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+    const anaStartMinutes = ANA_START_HOUR * 60 + ANA_START_MINUTE;
+    const anaEndMinutes = ANA_END_HOUR * 60 + ANA_END_MINUTE;
     
-    // Between 9:00:00 and 17:30:00
-    if (hour > 9 && hour < 17) return true;
-    if (hour === 9 && minute >= 0) return true;
-    if (hour === 17 && minute <= 30) return true;
-    
-    return false;
+    return timeInMinutes >= anaStartMinutes && timeInMinutes < anaEndMinutes;
+  };
+
+  const filterCallsByAgent = (isAna: boolean): CloudTalkCall[] => {
+    return calls.filter(call => {
+      const isAnaHours = isWithinAnaHours(call.started_at);
+      return isAna ? isAnaHours : !isAnaHours;
+    });
   };
 
   const calculateMetrics = (filteredCalls: CloudTalkCall[]): CallMetrics => {
@@ -76,41 +97,46 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
 
     filteredCalls.forEach(call => {
       const billsec = parseInt(call.billsec || '0');
-      
-      // A call is answered if billsec > 0 (actual conversation happened)
-      // A call is missed if billsec = 0 (no actual conversation, regardless of system activity)
       const isAnswered = billsec > 0;
-      
+
       if (call.type === 'incoming') {
-        metrics.incomingTotal++;
         if (isAnswered) {
           metrics.incomingAnswered++;
         } else {
           metrics.incomingMissed++;
         }
+        metrics.incomingTotal++;
       } else if (call.type === 'outgoing') {
-        metrics.outgoingTotal++;
         if (isAnswered) {
           metrics.outgoingAnswered++;
         } else {
           metrics.outgoingMissed++;
         }
+        metrics.outgoingTotal++;
       }
-      metrics.grandTotal++;
     });
+
+    // Grand total only counts answered calls (as per previous requirements)
+    metrics.grandTotal = metrics.incomingAnswered + metrics.outgoingAnswered;
 
     return metrics;
   };
 
-  const calculateDailyMetrics = (isAnaHours: boolean): DailyCallMetrics[] => {
-    const dailyMetrics: DailyCallMetrics[] = [];
-    const today = new Date();
+  const calculateDailyMetrics = (filteredCalls: CloudTalkCall[]): DailyCallMetrics[] => {
+    const { start, end } = getDateRange(phoneCallsFilter);
+    const days = eachDayOfInterval({ start, end });
+    
+    return days.map(day => {
+      const dayStart = startOfDay(day);
+      const dayEnd = endOfDay(day);
+      
+      const dayCalls = filteredCalls.filter(call => {
+        const callDate = parseISO(call.started_at);
+        return isWithinInterval(callDate, { start: dayStart, end: dayEnd });
+      });
 
-    // Create array of last 7 days
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(today, i);
-      dailyMetrics.push({
-        date,
+      const dayMetrics: DailyCallMetrics = {
+        date: day,
         incomingAnswered: 0,
         incomingMissed: 0,
         incomingTotal: 0,
@@ -118,185 +144,123 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
         outgoingMissed: 0,
         outgoingTotal: 0,
         grandTotal: 0,
-      });
-    }
+      };
 
-    // Filter calls by time and aggregate by day
-    calls.forEach(call => {
-      const matchesTimeFilter = isAnaHours ? isAnasHours(call.started_at) : !isAnasHours(call.started_at);
-      if (!matchesTimeFilter) return;
+      dayCalls.forEach(call => {
+        const billsec = parseInt(call.billsec || '0');
+        const isAnswered = billsec > 0;
 
-      const callDate = toZonedTime(parseISO(call.started_at), LISBON_TZ);
-      const billsec = parseInt(call.billsec || '0');
-      
-      // A call is answered if billsec > 0 (actual conversation happened)
-      const isAnswered = billsec > 0;
-      
-      dailyMetrics.forEach(dayStat => {
-        const dayStart = startOfDay(dayStat.date);
-        const dayEnd = endOfDay(dayStat.date);
-        
-        if (isWithinInterval(callDate, { start: dayStart, end: dayEnd })) {
-          if (call.type === 'incoming') {
-            dayStat.incomingTotal++;
-            if (isAnswered) dayStat.incomingAnswered++;
-            else dayStat.incomingMissed++;
-          } else if (call.type === 'outgoing') {
-            dayStat.outgoingTotal++;
-            if (isAnswered) dayStat.outgoingAnswered++;
-            else dayStat.outgoingMissed++;
+        if (call.type === 'incoming') {
+          if (isAnswered) {
+            dayMetrics.incomingAnswered++;
+          } else {
+            dayMetrics.incomingMissed++;
           }
-          dayStat.grandTotal++;
+          dayMetrics.incomingTotal++;
+        } else if (call.type === 'outgoing') {
+          if (isAnswered) {
+            dayMetrics.outgoingAnswered++;
+          } else {
+            dayMetrics.outgoingMissed++;
+          }
+          dayMetrics.outgoingTotal++;
         }
       });
-    });
 
-    return dailyMetrics;
+      dayMetrics.grandTotal = dayMetrics.incomingAnswered + dayMetrics.outgoingAnswered;
+
+      return dayMetrics;
+    });
   };
 
-  const renderWeeklyTable = (title: string, isAnaHours: boolean) => {
-    const dailyMetrics = calculateDailyMetrics(isAnaHours);
-    const totalMetrics = calculateMetrics(
-      calls.filter(call => isAnaHours ? isAnasHours(call.started_at) : !isAnasHours(call.started_at))
-    );
+  const getFilterLabel = (): string => {
+    const now = new Date();
+    switch (phoneCallsFilter) {
+      case 'today':
+        return 'Today';
+      case 'yesterday':
+        return 'Yesterday';
+      case 'weekly':
+        return 'Last 7 Days';
+      case 'currentMonth':
+        return formatMonthYear(now);
+      case 'lastMonth':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        return formatMonthYear(lastMonth);
+      default:
+        return '';
+    }
+  };
+
+  const renderWeeklyTable = (title: string, isAna: boolean) => {
+    const filteredCalls = filterCallsByAgent(isAna);
+    const dailyMetrics = calculateDailyMetrics(filteredCalls);
+    const totalMetrics = calculateMetrics(filteredCalls);
 
     return (
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-        <div className="bg-white px-6 py-4 border-b border-gray-200">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-          <p className="text-gray-600 text-sm mt-0.5">Daily Call Breakdown - Last 7 Days</p>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          <p className="text-blue-100 text-sm">{getFilterLabel()} - Daily Breakdown</p>
         </div>
-
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 sticky left-0 bg-gray-50 z-10">Metric</th>
-                {dailyMetrics.map((dayStat, index) => (
-                  <th key={index} className="px-4 py-3 text-center text-sm font-semibold text-gray-700 whitespace-nowrap">
-                    <div>{format(dayStat.date, 'dd/MM')}</div>
-                    <div className="text-xs font-normal text-gray-500">{format(dayStat.date, 'EEE')}</div>
+                <th className="sticky left-0 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Metric
+                </th>
+                {dailyMetrics.map((dm, idx) => (
+                  <th key={idx} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    {format(dm.date, 'dd/MM')}
+                    <br />
+                    <span className="text-gray-400 normal-case">{format(dm.date, 'EEE')}</span>
                   </th>
                 ))}
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700 bg-blue-50">Total</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider bg-blue-50">
+                  Total
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              <tr className="hover:bg-green-50 transition-colors">
-                <td className="px-6 py-4 sticky left-0 bg-white z-10">
-                  <div className="text-sm font-medium text-gray-900">Incoming - Answered</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm font-semibold text-gray-900">
-                    {dayStat.incomingAnswered}
-                  </td>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr className="bg-green-50">
+                <td className="sticky left-0 bg-green-50 px-6 py-4 text-sm font-medium text-gray-900">Incoming - Answered</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.incomingAnswered}</td>
                 ))}
-                <td className="px-6 py-4 text-right bg-blue-50">
-                  <div className="text-sm font-semibold text-gray-900">{totalMetrics.incomingAnswered}</div>
-                  <div className="text-sm font-medium text-blue-600">
-                    {totalMetrics.grandTotal > 0 ? ((totalMetrics.incomingAnswered / totalMetrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </td>
+                <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900 bg-blue-50">{totalMetrics.incomingAnswered}</td>
               </tr>
 
-              <tr className="hover:bg-red-50 transition-colors">
-                <td className="px-6 py-4 sticky left-0 bg-white z-10">
-                  <div className="text-sm font-medium text-gray-900">Incoming - Missed</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm font-semibold text-gray-900">
-                    {dayStat.incomingMissed}
-                  </td>
+              <tr className="bg-green-100 font-semibold">
+                <td className="sticky left-0 bg-green-100 px-6 py-4 text-sm text-gray-900">Incoming Total</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.incomingTotal}</td>
                 ))}
-                <td className="px-6 py-4 text-right bg-blue-50">
-                  <div className="text-sm font-semibold text-gray-900">{totalMetrics.incomingMissed}</div>
-                  <div className="text-sm font-medium text-blue-600">
-                    {totalMetrics.grandTotal > 0 ? ((totalMetrics.incomingMissed / totalMetrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </td>
+                <td className="px-6 py-4 text-center text-sm font-bold text-gray-900 bg-blue-100">{totalMetrics.incomingTotal}</td>
               </tr>
 
-              <tr className="bg-green-50 font-semibold">
-                <td className="px-6 py-4 sticky left-0 bg-green-50 z-10">
-                  <div className="text-sm text-gray-900">Incoming Total</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm text-gray-900">
-                    {dayStat.incomingTotal}
-                  </td>
+              <tr className="bg-purple-50">
+                <td className="sticky left-0 bg-purple-50 px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Answered</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.outgoingAnswered}</td>
                 ))}
-                <td className="px-6 py-4 text-right bg-blue-100">
-                  <div className="text-sm text-gray-900">{totalMetrics.incomingTotal}</div>
-                  <div className="text-sm text-blue-700">
-                    {totalMetrics.grandTotal > 0 ? ((totalMetrics.incomingTotal / totalMetrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </td>
+                <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900 bg-blue-50">{totalMetrics.outgoingAnswered}</td>
               </tr>
 
-              <tr className="hover:bg-blue-50 transition-colors">
-                <td className="px-6 py-4 sticky left-0 bg-white z-10">
-                  <div className="text-sm font-medium text-gray-900">Outgoing - Answered</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm font-semibold text-gray-900">
-                    {dayStat.outgoingAnswered}
-                  </td>
+              <tr className="bg-purple-100 font-semibold">
+                <td className="sticky left-0 bg-purple-100 px-6 py-4 text-sm text-gray-900">Outgoing Total</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.outgoingTotal}</td>
                 ))}
-                <td className="px-6 py-4 text-right bg-blue-50">
-                  <div className="text-sm font-semibold text-gray-900">{totalMetrics.outgoingAnswered}</div>
-                  <div className="text-sm font-medium text-blue-600">
-                    {totalMetrics.grandTotal > 0 ? ((totalMetrics.outgoingAnswered / totalMetrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </td>
-              </tr>
-
-              <tr className="hover:bg-red-50 transition-colors">
-                <td className="px-6 py-4 sticky left-0 bg-white z-10">
-                  <div className="text-sm font-medium text-gray-900">Outgoing - Missed</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm font-semibold text-gray-900">
-                    {dayStat.outgoingMissed}
-                  </td>
-                ))}
-                <td className="px-6 py-4 text-right bg-blue-50">
-                  <div className="text-sm font-semibold text-gray-900">{totalMetrics.outgoingMissed}</div>
-                  <div className="text-sm font-medium text-blue-600">
-                    {totalMetrics.grandTotal > 0 ? ((totalMetrics.outgoingMissed / totalMetrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </td>
-              </tr>
-
-              <tr className="bg-purple-50 font-semibold">
-                <td className="px-6 py-4 sticky left-0 bg-purple-50 z-10">
-                  <div className="text-sm text-gray-900">Outgoing Total</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm text-gray-900">
-                    {dayStat.outgoingTotal}
-                  </td>
-                ))}
-                <td className="px-6 py-4 text-right bg-blue-100">
-                  <div className="text-sm text-gray-900">{totalMetrics.outgoingTotal}</div>
-                  <div className="text-sm text-blue-700">
-                    {totalMetrics.grandTotal > 0 ? ((totalMetrics.outgoingTotal / totalMetrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </td>
+                <td className="px-6 py-4 text-center text-sm font-bold text-gray-900 bg-blue-100">{totalMetrics.outgoingTotal}</td>
               </tr>
 
               <tr className="bg-blue-100 font-bold border-t-2 border-blue-300">
-                <td className="px-6 py-4 sticky left-0 bg-blue-100 z-10">
-                  <div className="text-sm text-gray-900">Grand Total</div>
-                </td>
-                {dailyMetrics.map((dayStat, index) => (
-                  <td key={index} className="px-4 py-4 text-center text-sm text-gray-900">
-                    {dayStat.grandTotal}
-                  </td>
+                <td className="sticky left-0 bg-blue-100 px-6 py-4 text-sm text-gray-900">Grand Total</td>
+                {dailyMetrics.map((dm, idx) => (
+                  <td key={idx} className="px-4 py-4 text-center text-sm text-gray-900">{dm.grandTotal}</td>
                 ))}
-                <td className="px-6 py-4 text-right bg-blue-200">
-                  <div className="text-sm text-gray-900">{totalMetrics.grandTotal}</div>
-                  <div className="text-sm text-blue-900">100.0%</div>
-                </td>
+                <td className="px-6 py-4 text-center text-sm font-bold text-blue-900 bg-blue-200">{totalMetrics.grandTotal}</td>
               </tr>
             </tbody>
           </table>
@@ -305,45 +269,35 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
     );
   };
 
-  const renderSimpleTable = (title: string, isAnaHours: boolean) => {
-    const metrics = calculateMetrics(
-      calls.filter(call => isAnaHours ? isAnasHours(call.started_at) : !isAnasHours(call.started_at))
-    );
+  const renderSimpleTable = (title: string, isAna: boolean) => {
+    const filteredCalls = filterCallsByAgent(isAna);
+    const metrics = calculateMetrics(filteredCalls);
 
     return (
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-        <div className="bg-white px-6 py-4 border-b border-gray-200">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-          <p className="text-gray-600 text-sm mt-0.5">Call Statistics</p>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          <p className="text-blue-100 text-sm">{getFilterLabel()} Statistics</p>
         </div>
-
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Metric</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Count</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">% of Total</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% of Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              <tr className="hover:bg-green-50 transition-colors">
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr className="bg-green-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">Incoming - Answered</td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{metrics.incomingAnswered}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
+                <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.incomingAnswered}</td>
+                <td className="px-6 py-4 text-right text-sm text-blue-700">
                   {metrics.grandTotal > 0 ? ((metrics.incomingAnswered / metrics.grandTotal) * 100).toFixed(1) : '0.0'}%
                 </td>
               </tr>
 
-              <tr className="hover:bg-red-50 transition-colors">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">Incoming - Missed</td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{metrics.incomingMissed}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {metrics.grandTotal > 0 ? ((metrics.incomingMissed / metrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                </td>
-              </tr>
-
-              <tr className="bg-green-50 font-semibold">
+              <tr className="bg-green-100 font-semibold">
                 <td className="px-6 py-4 text-sm text-gray-900">Incoming Total</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.incomingTotal}</td>
                 <td className="px-6 py-4 text-right text-sm text-blue-700">
@@ -351,23 +305,15 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
                 </td>
               </tr>
 
-              <tr className="hover:bg-blue-50 transition-colors">
+              <tr className="bg-purple-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Answered</td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{metrics.outgoingAnswered}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
+                <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.outgoingAnswered}</td>
+                <td className="px-6 py-4 text-right text-sm text-blue-700">
                   {metrics.grandTotal > 0 ? ((metrics.outgoingAnswered / metrics.grandTotal) * 100).toFixed(1) : '0.0'}%
                 </td>
               </tr>
 
-              <tr className="hover:bg-red-50 transition-colors">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">Outgoing - Missed</td>
-                <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">{metrics.outgoingMissed}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium text-blue-600">
-                  {metrics.grandTotal > 0 ? ((metrics.outgoingMissed / metrics.grandTotal) * 100).toFixed(1) : '0.0'}%
-                </td>
-              </tr>
-
-              <tr className="bg-purple-50 font-semibold">
+              <tr className="bg-purple-100 font-semibold">
                 <td className="px-6 py-4 text-sm text-gray-900">Outgoing Total</td>
                 <td className="px-6 py-4 text-right text-sm text-gray-900">{metrics.outgoingTotal}</td>
                 <td className="px-6 py-4 text-right text-sm text-blue-700">
@@ -386,6 +332,9 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
       </div>
     );
   };
+
+  // Determine if we should show daily breakdown (weekly or month filters)
+  const showDailyBreakdown = phoneCallsFilter === 'weekly' || phoneCallsFilter === 'currentMonth' || phoneCallsFilter === 'lastMonth';
 
   if (isLoading) {
     return (
@@ -416,9 +365,74 @@ export default function TabPhoneCalls({ dateFilter }: TabPhoneCallsProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Phone Calls Specific Date Filters */}
+      <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-gray-700">Filter by:</span>
+          
+          {/* Standard filters */}
+          <button
+            onClick={() => setPhoneCallsFilter('today')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              phoneCallsFilter === 'today'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Today
+          </button>
+          <button
+            onClick={() => setPhoneCallsFilter('yesterday')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              phoneCallsFilter === 'yesterday'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Yesterday
+          </button>
+          <button
+            onClick={() => setPhoneCallsFilter('weekly')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              phoneCallsFilter === 'weekly'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last 7 Days
+          </button>
+          
+          {/* Divider */}
+          <div className="h-6 w-px bg-gray-300 mx-2"></div>
+          
+          {/* Month filters */}
+          <button
+            onClick={() => setPhoneCallsFilter('currentMonth')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              phoneCallsFilter === 'currentMonth'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Current Month
+          </button>
+          <button
+            onClick={() => setPhoneCallsFilter('lastMonth')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              phoneCallsFilter === 'lastMonth'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last Month
+          </button>
+        </div>
+      </div>
+
+      {/* Tables */}
       <div className="grid grid-cols-1 gap-6">
-        {dateFilter === 'weekly' ? (
+        {showDailyBreakdown ? (
           <>
             {renderWeeklyTable('Ana Pascoal (9:00 - 17:30)', true)}
             {renderWeeklyTable('Ruffa Espejon (Other Hours)', false)}

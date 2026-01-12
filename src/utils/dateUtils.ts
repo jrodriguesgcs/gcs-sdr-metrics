@@ -1,6 +1,7 @@
-import { format, startOfDay, endOfDay, subDays } from 'date-fns';
+import { format, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { DateFilter, PhoneCallsDateFilter } from '../types';
 
-export function getDateRange(filter: 'today' | 'yesterday' | 'weekly'): { start: Date; end: Date } {
+export function getDateRange(filter: DateFilter | PhoneCallsDateFilter): { start: Date; end: Date } {
   const now = new Date();
   
   if (filter === 'today') {
@@ -14,14 +15,33 @@ export function getDateRange(filter: 'today' | 'yesterday' | 'weekly'): { start:
       start: startOfDay(yesterday),
       end: endOfDay(yesterday),
     };
-  } else {
+  } else if (filter === 'weekly') {
     // weekly: today + previous 6 days = 7 days total
     const sixDaysAgo = subDays(now, 6);
     return {
       start: startOfDay(sixDaysAgo),
       end: endOfDay(now),
     };
+  } else if (filter === 'currentMonth') {
+    // Current month: from 1st of current month to now
+    return {
+      start: startOfMonth(now),
+      end: endOfDay(now),
+    };
+  } else if (filter === 'lastMonth') {
+    // Last month: entire previous month
+    const lastMonth = subMonths(now, 1);
+    return {
+      start: startOfMonth(lastMonth),
+      end: endOfMonth(lastMonth),
+    };
   }
+  
+  // Default fallback to today
+  return {
+    start: startOfDay(now),
+    end: endOfDay(now),
+  };
 }
 
 export function isDateInRange(dateString: string, start: Date, end: Date): boolean {
@@ -33,4 +53,12 @@ export function isDateInRange(dateString: string, start: Date, end: Date): boole
 
 export function formatDate(date: Date): string {
   return format(date, 'MMM dd, yyyy');
+}
+
+export function formatDateShort(date: Date): string {
+  return format(date, 'dd/MM');
+}
+
+export function formatMonthYear(date: Date): string {
+  return format(date, 'MMMM yyyy');
 }
