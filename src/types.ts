@@ -1,45 +1,66 @@
-export type DateFilter = 'today' | 'yesterday' | 'weekly';
+export interface Deal {
+  id: string;
+  title: string;
+  owner: string;
+  createdDate: string;
+  customFields: {
+    sdrAgent?: string;
+    distributionTime?: string;
+    lostDateTime?: string;
+    partner?: string;
+    mqlLostReason?: string;
+    primaryCountry?: string;
+    primaryProgram?: string;
+    calendlyEventCreated?: string;
+    sendToAutomation?: string;
+    dealCreationDateTime?: string;
+    sendToAutomationDateTime?: string;
+  };
+}
 
-// Phone calls specific date filter - includes month options
-export type PhoneCallsDateFilter = 'today' | 'yesterday' | 'weekly' | 'currentMonth' | 'lastMonth';
+export interface DealCustomFieldMeta {
+  id: string;
+  fieldLabel: string;
+}
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
 
 export interface LoadingProgress {
-  phase: 'idle' | 'fetching' | 'processing' | 'complete';
+  phase: 'idle' | 'metadata' | 'deals' | 'customFields' | 'merge' | 'complete';
   message: string;
   current: number;
   total: number;
   percentage: number;
 }
 
-export interface Deal {
-  id: string;
-  title: string;
-  contact: string;
-  owner: string;
-  value: string;
-  currency: string;
-  stage: string;
-  status: string;
-  created: string;
-  updated: string;
-  customFields: {
-    sdrAgent?: string;
-    dealOwner?: string;
-    distributionTime?: string;
-    meetingTime?: string;
-    bookingTime?: string;
-    clientCountry?: string;
-    clientProgram?: string;
-    sentToPartner?: string;
-    automationStatus?: string;
-    mqlLostReason?: string;
-  };
-}
+export type DateFilter = 'today' | 'yesterday' | 'weekly';
+
+// Phone calls specific date filter - includes month options
+export type PhoneCallsDateFilter = 'today' | 'yesterday' | 'weekly' | 'currentMonth' | 'lastMonth';
 
 export interface SDRMetrics {
   sdrAgent: string;
-  dealsByOwner: Record<string, number>;
-  timeToDistribution: Record<string, number>;
+  totalAgentDeals: number;
+  dealsByOwner: {
+    [owner: string]: {
+      total: number;
+      byCountry: {
+        [country: string]: {
+          total: number;
+          byProgram: {
+            [program: string]: number;
+          };
+        };
+      };
+    };
+  };
+  timeToDistribution: {
+    [interval: string]: number;
+  };
   bookingsBeforeDistribution: number;
   sentToPartner: {
     atLegalGreece: number;
@@ -47,14 +68,21 @@ export interface SDRMetrics {
     rafaelaBarbosaItalyCBD: number;
   };
   automationMetrics: {
-    noInterest: number;
     portugalD7: number;
     portugalTax: number;
     portugalLegal: number;
+    goldcrest: number;
+    unresponsive: number;
+    interestNotIdentified: number;
     serviceNotAvailable: number;
     futureOpportunity: number;
-    unresponsiveUnqualified: number;
-    tagToDelete: number;
     ineligible: number;
+    tagToDelete: number;
+  };
+  stats: {
+    distributedToSales: number;
+    sentToAutomation: number;
+    sentToPartners: number;
+    mqlLost: number;
   };
 }
